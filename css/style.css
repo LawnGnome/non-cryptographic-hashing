@@ -1,0 +1,174 @@
+@import url(fonts.css);
+
+.reveal,
+.reveal h1, .reveal h2, .reveal h3, .reveal h4, .reveal h5, .reveal h6 {
+  color: black;
+}
+
+.reveal {
+  font-size: 48px;
+}
+
+.reveal .title {
+  font-size: 36px;
+}
+
+.reveal h1, .reveal h2, .reveal h3, .reveal h4, .reveal h5, .reveal h6 {
+  font-family: Amaranth, sans-serif;
+  font-weight: bold;
+  letter-spacing: 0;
+}
+
+.reveal h1.lowercase, .reveal h2.lowercase, .reveal h3.lowercase, .reveal h4.lowercase, .reveal h5.lowercase, .reveal h6.lowercase {
+  text-transform: none;
+}
+
+.reveal .title h1 {
+  font-size: 2.5em;
+}
+
+.reveal a {
+  color: #1F4159;
+}
+
+.reveal small {
+  display: block;
+  font-size: 0.3em;
+  letter-spacing: 0;
+  vertical-align: baseline;
+}
+
+.horror {
+  color: #a00 !important;
+  font-family: Creepster, Amaranth, sans-serif !important;
+  letter-spacing: 0 !important;
+}
+
+.reveal strong {
+  color: #a00;
+  font-weight: bold;
+}
+
+.reveal code {
+  font-family: "Source Code Pro", monospace;
+  font-weight: 600;
+  text-transform: none !important;
+}
+
+.reveal pre code {
+  font-family: "Source Code Pro", monospace;
+  font-size: 2em;
+  font-weight: 600;
+  line-height: 1.4;
+  max-height: 10000em;
+}
+
+img {
+  border: 0 !important;
+}
+
+.reveal img.hide-border {
+  box-shadow: none;
+}
+
+.mega-octicon {
+  font-family: octicons !important;
+  font-size: 2em !important;
+  font-weight: normal !important;
+}
+
+.diff-minus {
+  color: #700;
+}
+
+.wrap {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.reveal .image p {
+  font-size: 0.7em;
+  margin: 0.2em 0;
+}
+
+/* highlight.js colouring */
+.reveal pre code,
+.hljs {
+  background: white;
+  color: black;
+}
+
+.hljs-keyword,
+.hljs-tag,
+.hljs-request,
+.hljs-status {
+  color: #4f007f !important;
+}
+
+.hljs-comment {
+  color: #005f13 !important;
+}
+
+.hljs-number,
+.hljs-date {
+  color: #00135f !important;
+}
+
+.hljs-variable {
+  color: #5f1300 !important;
+}
+
+.hljs-string,
+.hljs-title {
+  color: #00237f !important;
+}
+
+/* svg */
+.flowchart line,
+.bc line {
+  stroke: black;
+  stroke-width: 10px;
+}
+
+.flowchart line.arrow,
+.bc line.arrow {
+  marker-end: url(#arrowhead);
+}
+
+.flowchart text {
+  fill: black;
+  stroke: none;
+}
+
+.flowchart text.code {
+  font-family: "Source Code Pro", monospace;
+  font-weight: 600;
+}
+
+.bc .outline {
+  fill: none;
+  stroke: black;
+  stroke-width: 10px;
+}
+
+.bc .fill {
+  mix-blend-mode: darken;
+  stroke: none;
+}
+
+.bc .old {
+  fill: #ff4444;
+  fill-opacity: 0.8;
+}
+
+.bc .new {
+  fill: aqua;
+  fill-opacity: 0.8;
+  stroke: none;
+}
+
+.bc .label {
+  text-anchor: middle;
+}
+
+/* vim: set nocin ai et ts=2 sw=2: */

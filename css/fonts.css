@@ -1,0 +1,71 @@
+@import url(../octicons/octicons.css);
+
+@font-face {
+  font-family: Amaranth;
+  font-weight: bold;
+  src: url(../fonts/Amaranth/Amaranth-Bold.ttf) format("truetype");
+}
+
+@font-face {
+  font-family: Amaranth;
+  font-style: italic;
+  font-weight: bold;
+  src: url(../fonts/Amaranth/Amaranth-BoldItalic.ttf) format("truetype");
+}
+
+@font-face {
+  font-family: Creepster;
+  src: url(../fonts/Creepster/Creepster-Regular.ttf) format("truetype");
+}
+
+@font-face {
+  font-family: "Open Sans";
+  src: url(../fonts/Open_Sans/OpenSans-Regular.ttf) format("truetype");
+}
+
+@font-face {
+  font-family: "Open Sans";
+  font-style: italic;
+  src: url(../fonts/Open_Sans/OpenSans-Italic.ttf) format("truetype");
+}
+
+@font-face {
+  font-family: "Open Sans";
+  font-weight: bold;
+  src: url(../fonts/Open_Sans/OpenSans-Bold.ttf) format("truetype");
+}
+
+@font-face {
+  font-family: "Open Sans";
+  font-style: italic;
+  font-weight: bold;
+  src: url(../fonts/Open_Sans/OpenSans-BoldItalic.ttf) format("truetype");
+}
+
+@font-face {
+  font-family: Quicksand;
+  src: url(../fonts/Quicksand/Quicksand-Regular.ttf) format("truetype");
+}
+
+@font-face {
+  font-family: Quicksand;
+  font-weight: bold;
+  src: url(../fonts/Quicksand/Quicksand-Bold.ttf) format("truetype");
+}
+
+@font-face {
+  font-family: "Source Code Pro";
+  src: url(../fonts/Source_Code_Pro/SourceCodePro-Regular.ttf) format("truetype");
+}
+
+@font-face {
+  font-family: "Source Code Pro";
+  font-weight: 600;
+  src: url(../fonts/Source_Code_Pro/SourceCodePro-Semibold.ttf) format("truetype");
+}
+
+@font-face {
+  font-family: "Source Code Pro";
+  font-weight: bold;
+  src: url(../fonts/Source_Code_Pro/SourceCodePro-Bold.ttf) format("truetype");
+}
