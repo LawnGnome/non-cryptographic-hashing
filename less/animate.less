@@ -6,6 +6,7 @@
       animation-name: @keyframes-id;
       animation-delay: (@i - 1) * @per;
       animation-iteration-count: infinite;
+      animation-timing-function: steps(@n, end);
       display: block;
       height: 0;
       opacity: 0;
@@ -18,7 +19,6 @@
 
     0% { opacity: 1; }
     @{percentage} { opacity: 1; }
-    99% { opacity: 0; }
   }
 
   .keyframe-loop(@i) when (@i > 0) {
