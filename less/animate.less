@@ -1,0 +1,83 @@
+.cycle(@n, @per) {
+  .child-loop(@i) when (@i > 0) {
+    .child-loop((@i - 1));
+    & > *:nth-child(@{i}) {
+      animation-duration: @per * @n;
+      animation-name: @keyframes-id;
+      animation-delay: (@i - 1) * @per;
+      animation-iteration-count: infinite;
+      display: block;
+      height: 0;
+      opacity: 0;
+    }
+  }
+
+  .keyframe-loop(@i) when (@i = 0) {
+    @next: (1 / @n * 100) - 1;
+    @percentage: e("@{next}%");
+
+    0% { opacity: 1; }
+    @{percentage} { opacity: 1; }
+    99% { opacity: 0; }
+  }
+
+  .keyframe-loop(@i) when (@i > 0) {
+    .keyframe-loop((@i - 1));
+
+    @value: @i / @n * 100;
+    @percentage: e("@{value}%");
+
+    @{percentage} { opacity: 0; }
+  }
+
+  @keyframes-id: %(~"cycle-keyframes-%d", @n);
+
+  @keyframes @keyframes-id {
+    .keyframe-loop(@n)
+  }
+
+  .child-loop(@n);
+}
+
+.cycle-4 {
+  .cycle(4, 1s);
+}
+
+.scroll(@n, @per) {
+  @line-height: 1.5em;
+
+  .child-loop(@i) when (@i > 0) {
+    .child-loop((@i - 1));
+    & > div > :nth-child(@{i}) {
+      display: block;
+
+      // Duplicate the text via text-shadow.
+      line-height: @line-height;
+      text-shadow: 0 (@n * @line-height) black;
+    }
+  }
+
+  @keyframes-id: %(~"scroll-keyframes-%d", @n);
+
+  @keyframes @keyframes-id {
+    to {
+      transform: translate(0, (-1 * @n * @line-height));
+    }
+  }
+
+  .child-loop(@n);
+  overflow: hidden;
+
+  & > div {
+    animation-name: @keyframes-id;
+    animation-iteration-count: infinite;
+    animation-duration: @per * @n;
+    animation-timing-function: steps(@n, end);
+  }
+}
+
+.scroll-4 {
+  .scroll(4, 1s);
+}
+
+/* vim: set ft=css nocin ai et ts=2 sw=2: */

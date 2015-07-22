@@ -77,6 +77,12 @@ img {
   font-weight: normal !important;
 }
 
+.octicon {
+  font-family: octicons !important;
+  font-size: 2em !important;
+  font-weight: normal !important;
+}
+
 .diff-minus {
   color: #700;
 }

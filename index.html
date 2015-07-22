@@ -17,6 +17,7 @@
 
     <!-- CSS overrides -->
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/animate.css">
 
 		<!-- Code syntax highlighting -->
 		<link rel="stylesheet" href="reveal.js/lib/css/zenburn.css">
@@ -50,6 +51,32 @@
             <a href="http://newrelic.com">New Relic</a>
           </h3>
 				</section>
+
+        <section>
+          <section>
+            <h1>What?</h1>
+          </section>
+
+          <section class="input-output">
+            <div class="input scroll-4">
+              <div>
+                <code>Lorem ipsum dolor sit amet,</code>
+                <code>consectetur adipiscing elit.</code>
+                <code>Integer vitae ex nec nisl</code>
+                <code>fermentum sodales in ut lectus.</code>
+              </div>
+            </div>
+            <div style="font-size: 2em">
+              <span class="octicon mega-octicon octicon-arrow-down"></span>
+            </div>
+            <div class="output cycle-4">
+              <code>61df8894</code>
+              <code>0ec572f8</code>
+              <code>19e37640</code>
+              <code>372ecf1b</code>
+            </div>
+          </section>
+        </section>
       </div>
 
 		</div>
@@ -83,33 +110,6 @@
 			});
 
 		</script>
-
-    <script src="js/Chart.js"></script>
-    <script>
-      document.addEventListener("DOMContentLoaded", function () {
-        var ctx = document.getElementById("phpdoc-chart").getContext("2d");
-        var chart = new Chart(ctx).Bar(
-          {
-            labels: ["5.3", "5.4", "5.5", "5.6", "7.0"],
-            datasets: [
-              {
-                data: [36.875, 28.123, 26.384, 25.336, 19.728]
-              }
-            ]
-          },
-          {
-            responsive: true,
-            scaleFontColor: "#333",
-            scaleFontFamily: "'Open Sans'",
-            scaleFontSize: 40,
-            scaleLabel: " <%=value%>",
-            scaleShowHorizontalLines: false,
-            scaleShowVerticalLines: false,
-          }
-        );
-      });
-    </script>
-
 
 	</body>
 </html>
