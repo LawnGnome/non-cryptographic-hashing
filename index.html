@@ -789,12 +789,12 @@ return hash
               <tbody>
                 <tr>
                   <td>Numbers</td>
-                  <td>4.965808</td>
+                  <td>4.409535</td>
                   <td>5 (0.002%)</td>
                 </tr>
                 <tr>
                   <td>Words</td>
-                  <td>4.409535</td>
+                  <td>4.965808</td>
                   <td>5 (0.002%)</td>
                 </tr>
               </tbody>
@@ -971,21 +971,19 @@ return hash
               <tbody>
                 <tr>
                   <td>Numbers</td>
-                  <td>4.032726</td>
-                  <td>12 (0.005%)</td>
+                  <td>3.337822</td>
+                  <td>0</td>
                 </tr>
                 <tr>
                   <td>Words</td>
-                  <td>3.337822</td>
-                  <td>0</td>
+                  <td>4.032726</td>
+                  <td>12 (0.005%)</td>
                 </tr>
               </tbody>
             </table>
             <aside class="notes">
-              No word collisions, which probably indicates the type of data
-              xxHash was most tested with. The difference between the numbers
-              and words is bigger than the other functions due to the ability
-              to process more at a time: there are more cache hits.
+              No number collisions, which probably indicates the type of data
+              xxHash was most tested with.
             </aside>
           </section>
 
@@ -993,6 +991,255 @@ return hash
             <h2>xxHash</h2>
             <img src="images/xxhash32.png">
           </section>
+        </section>
+
+        <section>
+          <section>
+            <h1 style="font-size: 2.5em">SuperFastHash</h1>
+            <aside class="notes">
+              All these good hash functions are boring. Let's look at what
+              happens when you use a bad function. To quote NonCryptoHashZoo:
+              SuperFastHash is the quintessential example of how easy it is to
+              go wrong when making your own hash function even if you're
+              incredibly smart.
+            </aside>
+          </section>
+
+          <section>
+            <h2>SuperFastHash</h2>
+            <pre><code class="python" data-trim style="font-size: 0.38em">
+def superfasthash(data: bytes, seed: uint32) -> uint32:
+    hash = seed + uint32(len(data))
+
+    i = 0
+    while i < len(data):
+        c = data[i:i+4]
+        i += 4
+
+        if len(c) == 4:
+            high = uint32(unpack("=H", c[0:2])[0])
+            low = uint32(unpack("=H", c[2:4])[0])
+
+            hash += high
+            tmp = (low << uint32(11)) ^ hash
+            hash = (hash << uint32(16)) ^ tmp
+            hash += hash >> uint32(11)
+        elif len(c) == 3:
+            high = uint32(unpack("=H", c[0:2])[0])
+            low = uint32(unpack("=B", c[2:])[0])
+
+            hash += high
+            hash ^= hash << uint32(16)
+            hash ^= low << uint32(18)
+            hash += hash >> uint32(11)
+        elif len(c) == 2:
+            hash += uint32(unpack("=H", c)[0])
+            hash ^= hash << uint32(11)
+            hash += hash >> uint32(17)
+        elif len(c) == 1:
+            hash += uint32(unpack("=B", c)[0])
+            hash ^= hash << uint32(10)
+            hash += hash >> uint32(1)
+
+    hash ^= hash << uint32(3)
+    hash += hash >> uint32(5)
+    hash ^= hash << uint32(4)
+    hash += hash >> uint32(17)
+    hash ^= hash << uint32(25)
+    hash += hash >> uint32(6)
+
+    return hash
+            </code></pre>
+            <aside class="notes">
+              Interesting: there's no initial state besides the seed and the
+              length of the input.
+            </aside>
+          </section>
+
+          <section>
+            <h2>SuperFastHash</h2>
+            <pre><code class="python" data-trim style="font-size: 1.3em">
+high = uint32(unpack("=H", c[0:2])[0])
+low = uint32(unpack("=H", c[2:4])[0])
+
+hash += high
+tmp = (low << uint32(11)) ^ hash
+hash = (hash << uint32(16)) ^ tmp
+hash += hash >> uint32(11)
+            </code></pre>
+            <aside class="notes">
+              There are four different mixing functions for the 4, 3, 2 and 1
+              byte cases, but let's focus on the 4 byte version. There are some
+              gymnastics here around bitshifting, but note that the first and
+              last shift amounts are the same.
+            </aside>
+          </section>
+
+          <section>
+            <h2>SuperFastHash</h2>
+            <pre><code class="python" data-trim style="font-size: 1.3em">
+hash ^= hash << uint32(3)
+hash += hash >> uint32(5)
+hash ^= hash << uint32(4)
+hash += hash >> uint32(17)
+hash ^= hash << uint32(25)
+hash += hash >> uint32(6)
+
+return hash
+            </code></pre>
+            <aside class="notes">
+              Probably because of this, there's a lot of shifting in the post
+              processing. The problem is that the damage has been done by now:
+              the 4 byte loop often collapses into the same state, and then
+              you're going to end up with basically the same output.
+            </aside>
+          </section>
+
+          <section>
+            <h2>SuperFastHash</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Corpus</th>
+                  <th>CPU time (s)</th>
+                  <th>Collisions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Numbers</td>
+                  <td>2.195209</td>
+                  <td>23946 (10.152%)</td>
+                </tr>
+                <tr>
+                  <td>Words</td>
+                  <td>2.609869</td>
+                  <td>54 (0.023%)</td>
+                </tr>
+              </tbody>
+            </table>
+            <aside class="notes">
+              Oh. Oh dear.
+            </aside>
+          </section>
+
+          <section>
+            <h2>SuperFastHash</h2>
+            <img src="images/superfasthash.png">
+            <aside class="notes">
+              See that stripe down the right hand side? That's not good. That's
+              a lot of values collapsing into the same buckets.
+            </aside>
+          </section>
+
+          <section>
+            <h2>JSHash</h2>
+            <img src="images/jshash.png">
+            <aside class="notes">
+              Of course, it could be worse. I won't go through the
+              implementation of this one, but this is the output of JSHash
+              (Justin Sobel) with the numbers input.
+            </aside>
+          </section>
+        </section>
+
+        <section>
+          <section>
+            <h1>CRC32</h1>
+            <aside class="notes">
+              Finally, there is the venerable CRC32. The Cyclic Redundancy
+              Check family of functions rely on polynomial division to generate
+              a checksum. There's serious maths here. I don't know if you're
+              ready for the implementation...
+            </aside>
+          </section>
+
+          <section>
+            <h2>CRC32</h2>
+            <pre><code class="python" data-trim style="font-size: 1.4em">
+import zlib
+
+def crc32(data: bytes) -> int:
+    return zlib.crc32(data) & 0xffffffff
+            </code></pre>
+            <aside class="notes">
+              (pause) So, why wouldn't you use this all the time? Actually, you
+              might. It's not that bad.
+            </aside>
+          </section>
+
+          <section>
+            <h2>CRC32</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Corpus</th>
+                  <th>CPU time (s)</th>
+                  <th>Collisions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Numbers</td>
+                  <td>0.576802</td>
+                  <td>0</td>
+                </tr>
+                <tr>
+                  <td>Words</td>
+                  <td>0.572763</td>
+                  <td>8 (0.003%)</td>
+                </tr>
+              </tbody>
+            </table>
+            <aside class="notes">
+              Really, that's pretty good. The word collisions are potentially
+              an issue, but it's still above average. The only other issue is
+              memory usage: CRC32 uses a lookup table and keeps more in memory,
+              but unless you're on the $7 Python computer, you should be fine.
+            </aside>
+          </section>
+        </section>
+
+        <section>
+          <section>
+            <h1 style="font-size: 3em">Conclusions</h1>
+          </section>
+          
+          <section>
+            <h2>Know your environment</h2>
+            <aside class="notes">
+              MurmurHash3 and xxHash smoke every other algorithm when
+              implemented in (OK) C or C++, because they exploit how CPUs
+              behave when you're writing at that level. They use cache locality
+              and read alignment to their advantage. In Python, though, that's
+              just overhead: the byte at a time approach is actually faster
+              because of the way the bytes type is implemented, and other
+              algorithms can be simpler.
+            </aside>
+          </section>
+
+          <section>
+            <h2>Know your requirements</h2>
+            <aside class="notes">
+              Understand how many collisions you're willing to bear. The best
+              way to figure this out is to implement and test with sample data:
+              hash functions are easy to implement, and you can test output
+              using sets. If you can deal with a few more collisions, there are
+              speedier options, like CRC32.
+            </aside>
+          </section>
+
+          <section>
+            <h2>Respect the standard library</h2>
+            <aside class="notes">
+              The C CRC32 implementation kills everything else, even though CRC32 isn't considered a fast algorithm in general. If you're calling hash functions a lot and don't want to write C yourself, use what Python gives you. It's free!
+            </aside>
+          </section>
+        </section>
+
+        <section>
+          <h2>Thank you!</h2>
+          <h3>Questions?</h3>
         </section>
       </div>
 
