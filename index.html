@@ -18,6 +18,7 @@
     <!-- CSS overrides -->
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/animate.css">
+    <link rel="stylesheet" href="css/flowchart.css">
 
 		<!-- Code syntax highlighting -->
 		<link rel="stylesheet" href="reveal.js/lib/css/zenburn.css">
@@ -174,6 +175,64 @@
           </section>
 
           <section>
+            <h2>Goals</h2>
+            <ul>
+              <li>Fast</li>
+              <li>Well distributed output</li>
+            </ul>
+            <aside class="notes">
+              <p>
+                There are two key goals. We want something that's quick, and we
+                want something that distributes its output well. A common use
+                of non-cryptographic hash functions is in implementing hash
+                tables &mdash; while that's not usually a huge concern in
+                Python, you don't want clumps in your output, because that
+                often leads to collisions.
+              </p>
+            </aside>
+          </section>
+
+          <section>
+            <h2>Avalanche effect</h2>
+            <div class="input">
+              <div><code>000<strong>10</strong>000</code></div>
+              <div><code>000<strong>01</strong>000</code></div>
+              <div><code>000<strong>11</strong>000</code></div>
+              <div><code>000<strong>00</strong>000</code></div>
+            </div>
+            <div style="font-size: 2em">
+              <span class="octicon mega-octicon octicon-arrow-down"></span>
+            </div>
+            <div class="output">
+              <code>000<strong>??</strong>00</code>
+            </div>
+            <aside class="notes">
+              This is what you don't want. You want each change to the data to
+              have a bigger effect on the output.
+            </aside>
+          </section>
+
+          <section>
+            <h2>Avalanche effect</h2>
+            <div class="input">
+              <div><code>000<strong>10</strong>000</code></div>
+              <div><code>000<strong>01</strong>000</code></div>
+              <div><code>000<strong>11</strong>000</code></div>
+              <div><code>000<strong>00</strong>000</code></div>
+            </div>
+            <div style="font-size: 2em">
+              <span class="octicon mega-octicon octicon-arrow-down"></span>
+            </div>
+            <div class="output">
+              <code><strong>????????</strong></code>
+            </div>
+            <aside class="notes">
+              Having each change have a large change on the output is called
+              the avalanche effect.
+            </aside>
+          </section>
+
+          <section>
             <pre><code class="python" data-trim>
 def hash_function(data: bytes) -&gt; int:
   for chunk in data:
@@ -185,6 +244,8 @@ def hash_function(data: bytes) -&gt; int:
               <p>
                 Broadly, this is how every hash function is constructed. Easy,
                 huh? (Python provides a cleverness function, I'm sure.)
+                Cleverness is actually a "mixing function": it takes the
+                current state and mutates it with the chunk.
               </p>
               <p>
                 Chunk sizes vary, but are most commonly bytes or 32-bit words.
@@ -202,10 +263,15 @@ def hash_function(data: bytes) -&gt; int:
             <h2>Cleverness</h2>
             <ul>
               <li>Unsigned, fixed length integers</li>
-              <li>Bitwise operations (especially <code>xor</code>)</li>
+              <li>Bitwise operations (<code>xor</code>; bitshifts)</li>
               <li>Multiplication</li>
-              <li>Modulo</li>
+              <li>Primes</li>
             </ul>
+            <aside class="notes">
+              The basic constructs that tend to be used. Bitshifts and xor are
+              extremely useful when the input has little variance, as they can
+              be used to force lots of changes to otherwise unaffected bits.
+            </aside>
           </section>
 
           <section>
@@ -252,6 +318,246 @@ from numpy import uint32
 &lt;class 'numpy.<strong>uint32</strong>'&gt;</pre></code>
             <aside class="notes">
               You're going to see some ugly code. I apologise.
+            </aside>
+          </section>
+
+          <section>
+            <h2>Primes</h2>
+            <aside class="notes">
+              Most hashing algorithms include one or more (usually more) prime
+              numbers as constants. This is mostly for bucketing behaviour: if
+              you're using the output to place things into buckets, you don't
+              want common factors lest you end up bucketing naïvely into the
+              same buckets &mdash; if your hash function is biased towards
+              multiples of eight and you're implementing something with eight
+              buckets, you may not end up using seven of them much.
+            </aside>
+          </section>
+        </section>
+
+        <section>
+          <section>
+            <h1>FNV-1a</h1>
+            <aside class="notes">
+              Let's walk through an example: in this case, FNV-1a. FNV was
+              created by Glenn Fowler, Landon Curt Noll and Phong Vo in 1991,
+              and later revised to improve its avalanche behaviour. It's still
+              widely used today, and is simple enough that we can step through
+              it and see the principles noted above in action.
+            </aside>
+          </section>
+
+          <section>
+            <h2>FNV-1a</h2>
+            <pre><code class="python" data-trim>
+def fnv1a32(data: bytes) -&gt; uint32:
+  hash = uint32(2166136261)
+  for byte in data:
+    hash ^= uint32(byte)
+    hash *= uint32(16777619)
+  return hash
+            </code></pre>
+            <aside class="notes">
+              Here's the Python implementation of the algorithm. Note the ugly
+              uint32() calls, as previously threatened. Conceptually, though,
+              it's very simple: for each byte (since it's a bytewise
+              algorithm), we xor the hash value, then multiply it.
+            </aside>
+          </section>
+
+          <section>
+            <h2>FNV-1a</h2>
+            <svg class="flowchart" width="1000" height="500">
+              <defs>
+                <marker id="arrowhead" markerWidth="6" markerHeight="6" orient="auto" refX="6" refY="3">
+                  <path d="M0,0 L6,3 0,6" />
+                </marker>
+              </defs>
+
+              <rect class="terminal" x="5" y="210" height="80" width="150" rx="20" ry="20" />
+              <text class="label" x="80" y="250">data</text>
+
+              <rect class="terminal" x="845" y="210" height="80" width="150" rx="20" ry="20" />
+              <text class="label" x="920" y="250">hash</text>
+
+              <rect class="action xor" x="370" y="210" height="80" width="80" />
+              <text class="label" x="410" y="250">^</text>
+
+              <rect class="action mult" x="550" y="210" height="80" width="80" />
+              <text class="label" x="590" y="250">*</text>
+
+              <line class="arrow" x1="155" y1="250" x2="370" y2="250" />
+              <line class="arrow" x1="450" y1="250" x2="550" y2="250" />
+              <line class="arrow" x1="630" y1="250" x2="845" y2="250" />
+              <path class="arrow" d="M590 290 V 340 C 590 440, 410 440, 410 340 V 290" />
+            </svg>
+          </section>
+
+          <section>
+            <h3><code>fnv1a32(b"ab")</code></h3>
+            <pre><code class="python">  def fnv1a32(data: bytes) -&gt; uint32:
+&gt;   hash = uint32(2166136261)
+    for byte in data:
+      hash ^= uint32(byte)
+      hash *= uint32(16777619)
+    return hash</code></pre>
+            <h4><code>hash</code> (binary):</h4>
+            <code><pre>1000 0001 0001 1100 1001 1101 1100 0101</pre></code>
+            <h4><code>byte</code> (binary):</h4>
+            <code><pre>(unset)</pre></code>
+            <aside class="notes">
+              First, we set our hash value to a randomly selected number. This
+              isn't actually a prime: it's not chosen for its dispersal
+              characteristics, but rather is simply a non-zero value so that
+              the initial hash value isn't all zeroes. (In fact, it's the FNV-0
+              hash of the e-mail signature line of Landon Curt Noll!)
+            </aside>
+          </section>
+
+          <section>
+            <h3><code>fnv1a32(b"ab")</code></h3>
+            <pre><code class="python">  def fnv1a32(data: bytes) -&gt; uint32:
+    hash = uint32(2166136261)
+&gt;   for byte in data:
+      hash ^= uint32(byte)
+      hash *= uint32(16777619)
+    return hash</code></pre>
+            <h4><code>hash</code> (binary):</h4>
+            <code><pre>1000 0001 0001 1100 1001 1101 1100 0101</pre></code>
+            <h4><code>byte</code> (binary):</h4>
+            <code><pre>0000 0000 0000 0000 0000 0000 0110 0001</pre></code>
+            <aside class="notes">
+              Pick a byte (lowercase "a").
+            </aside>
+          </section>
+
+          <section>
+            <h3><code>fnv1a32(b"ab")</code></h3>
+            <pre><code class="python">  def fnv1a32(data: bytes) -&gt; uint32:
+    hash = uint32(2166136261)
+    for byte in data:
+&gt;     hash ^= uint32(byte)
+      hash *= uint32(16777619)
+    return hash</code></pre>
+            <h4><code>hash</code> (binary):</h4>
+            <code><pre>1000 0001 0001 1100 1001 1101 1<strong>01</strong>0 010<strong>0</strong></pre></code>
+            <h4><code>byte</code> (binary):</h4>
+            <code><pre>0000 0000 0000 0000 0000 0000 0110 0001</pre></code>
+            <aside class="notes">
+              Now we do the exclusive-or. Note that only three bits in hash
+              actually changed. Not very avalanchey!
+            </aside>
+          </section>
+
+          <section>
+            <h3><code>fnv1a32(b"ab")</code></h3>
+            <pre><code class="python">  def fnv1a32(data: bytes) -&gt; uint32:
+    hash = uint32(2166136261)
+    for byte in data:
+      hash ^= uint32(byte)
+&gt;     hash *= uint32(16777619)
+    return hash</code></pre>
+            <h4><code>hash</code> (binary):</h4>
+            <code><pre>1<strong>11</strong>0 0<strong>1</strong>0<strong>0</strong> 000<strong>0</strong> 1100 <strong>0</strong>0<strong>10</strong> 1<strong>0</strong>01 <strong>001</strong>0 <strong>1</strong>100</pre></code>
+            <h4><code>byte</code> (binary):</h4>
+            <code><pre>0000 0000 0000 0000 0000 0000 0110 0001</pre></code>
+            <aside class="notes">
+              Now we see some changes! The sharp of eye would have noticed that
+              this prime is close to 2^24, which means that we're effectively
+              performing a bitshift with some added noise in the lower bits.
+              There's some avalanche.
+            </aside>
+          </section>
+
+          <section>
+            <h3><code>fnv1a32(b"ab")</code></h3>
+            <pre><code class="python">  def fnv1a32(data: bytes) -&gt; uint32:
+    hash = uint32(2166136261)
+&gt;   for byte in data:
+      hash ^= uint32(byte)
+      hash *= uint32(16777619)
+    return hash</code></pre>
+            <h4><code>hash</code> (binary):</h4>
+            <code><pre>1110 0100 0000 1100 0010 1001 0010 1100</pre></code>
+            <h4><code>byte</code> (binary):</h4>
+            <code><pre>0000 0000 0000 0000 0000 0000 0110 00<strong>10</strong></pre></code>
+            <aside class="notes">
+              Now we do it again with b, which is only two bits different from
+              a.
+            </aside>
+          </section>
+
+          <section>
+            <h3><code>fnv1a32(b"ab")</code></h3>
+            <pre><code class="python">  def fnv1a32(data: bytes) -&gt; uint32:
+    hash = uint32(2166136261)
+    for byte in data:
+&gt;     hash ^= uint32(byte)
+      hash *= uint32(16777619)
+    return hash</code></pre>
+            <h4><code>hash</code> (binary):</h4>
+            <code><pre>1110 0100 0000 1100 0010 1001 0<strong>10</strong>0 11<strong>1</strong>0</pre></code>
+            <h4><code>byte</code> (binary):</h4>
+            <code><pre>0000 0000 0000 0000 0000 0000 0110 0001</pre></code>
+            <aside class="notes">
+              Again, only three bits change when we do the xor.
+            </aside>
+          </section>
+
+          <section>
+            <h3><code>fnv1a32(b"ab")</code></h3>
+            <pre><code class="python">  def fnv1a32(data: bytes) -&gt; uint32:
+    hash = uint32(2166136261)
+    for byte in data:
+      hash ^= uint32(byte)
+&gt;     hash *= uint32(16777619)
+    return hash</code></pre>
+            <h4><code>hash</code> (binary):</h4>
+            <code><pre><strong>0</strong>1<strong>0</strong>0 <strong>1</strong>10<strong>1</strong> 00<strong>1</strong>0 <strong>0</strong>10<strong>1</strong> 00<strong>0</strong>0 <strong>01</strong>01 <strong>1</strong>100 1<strong>0</strong>10</pre></code>
+            <h4><code>byte</code> (binary):</h4>
+            <code><pre>0000 0000 0000 0000 0000 0000 0110 0001</pre></code>
+            <aside class="notes">
+              You can see how well distributed the changes are, even after only
+              two bytes of input. Every nibble has one or two bits modified. A
+              small change resulted in a big change.
+            </aside>
+          </section>
+        </section>
+
+        <section>
+          <section>
+            <h1>Shootout</h1>
+            <aside class="notes">
+              Let's look at a few functions (specifically, the 32 bit versions
+              where appropriate). Firstly, though, we need a way to compare
+              them.
+            </aside>
+          </section>
+
+          <section>
+            <h2>Goals</h2>
+            <ul>
+              <li>Fast</li>
+              <li>Well distributed output</li>
+            </ul>
+            <aside class="notes">
+              Let's look at our goals again. How can we judge them?
+            </aside>
+          </section>
+
+          <section>
+            <h2>Fast</h2>
+            <aside class="notes">
+              Fast is easy. CPU time pretty much tells us that.
+            </aside>
+          </section>
+
+          <section>
+            <h2>Distribution</h2>
+            <aside class="notes">
+              We can look at collisions. I'm going to test each algorithm we
+              look at against two input sets: OS X's /usr/share/dict/words, and
+              the numbers 0-1000000 represented as strings.
             </aside>
           </section>
         </section>

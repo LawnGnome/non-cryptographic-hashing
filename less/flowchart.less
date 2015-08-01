@@ -1,0 +1,53 @@
+.flowchart {
+  @line-width: 5px;
+  @text-size: 48px;
+
+  .arrow {
+    marker-end: url(#arrowhead);
+  }
+
+  line {
+    stroke: black;
+    stroke-width: @line-width;
+  }
+
+  path {
+    &.arrow {
+      fill: none;
+      stroke: black;
+      stroke-width: @line-width;
+    }
+  }
+
+  rect {
+    .outline {
+      fill: none;
+      stroke: black;
+      stroke-width: @line-width;
+    }
+
+    &.action, &.terminal {
+      .outline;
+    }
+
+    &.mult {
+      fill: #f00;
+    }
+
+    &.xor {
+      fill: #0f0;
+    }
+  }
+
+  text {
+    font-family: "Source Code Pro", monospace;
+    font-size: @text-size;
+
+    &.label {
+      text-anchor: middle;
+      transform: translateY(0.4 * @text-size);
+    }
+  }
+}
+
+/* vim: set nocin ai et ts=2 sw=2: */
