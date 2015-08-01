@@ -57,6 +57,15 @@
             <h1>What?</h1>
           </section>
 
+          <section>
+            <h2>Hash function</h2>
+            <aside class="notes">
+              Let's start with the obvious: what is a hash function? (Most of
+              you likely know this already, but let's make sure we're all on
+              the same page.
+            </aside>
+          </section>
+
           <section class="input-output">
             <div class="input scroll-4">
               <div>
@@ -75,6 +84,93 @@
               <code>19e37640</code>
               <code>372ecf1b</code>
             </div>
+            <aside class="notes">
+              Fundamentally, a hash function takes any amount of data and
+              returns a number based on that data.
+            </aside>
+          </section>
+
+          <section>
+            <h2 id="hash-functions">
+              <code>MD5</code>
+              <code>SHA-1</code>
+              <code>SHA-256</code>
+              <code>SHA-512</code>
+            </h2>
+            <aside class="notes">
+              We use them every day. They underpin SSL, block encryption,
+              password storage, and many other things that we take for granted.
+            </aside>
+          </section>
+
+          <section>
+            <h2><strong style="opacity: 0">Non-</strong>Cryptographic hash function</h2>
+            <aside class="notes">
+              All of those are cryptographic hash functions, though. They're
+              designed with specific qualities in mind: to make it as difficult
+              as possible to generate collisions and to be able to work back to
+              find out what the input was. Key derivation functions extend this
+              for use with passwords: bcrypt uses the Blowfish block cipher in
+              conjunction with a basic hashing function to generate CPU-hard
+              hashes based on salted passwords.
+            </aside>
+          </section>
+
+          <section>
+            <h2><strong>Non-</strong>Cryptographic hash function</h2>
+            <aside class="notes">
+              <p>
+                Not all hash functions have to be cryptographic, though.
+                There's also a place for functions that are fast and reasonably
+                well distributed, but provide no guarantee of security. Some
+                can also minimise memory usage.
+              </p>
+              <p>
+                This is the world of the non-cryptographic hash function.
+              </p>
+            </aside>
+          </section>
+        </section>
+
+        <section>
+          <section>
+            <h1>Why?</h1>
+          </section>
+
+          <section>
+            <h2>What have I seen?</h2>
+            <aside class="notes">
+              Python provides a set type, but when you're dealing with a lot of
+              data you may not want to keep everything in memory. Hashing it
+              first can help, particularly if you're doing something that can
+              withstand the odd false positive.
+            </aside>
+          </section>
+
+          <section>
+            <h2>Is this valid?</h2>
+            <aside class="notes">
+              While you'd often need to use a cryptographic hash function for
+              checksumming, there are scenarios where you really do just want
+              the 2010s version of a parity bit. These can be quick and simple.
+            </aside>
+          </section>
+
+          <section>
+            <h2>Interoperability</h2>
+            <aside class="notes">
+              People spec weird things all the time. New Relic CAT example.
+            </aside>
+          </section>
+
+          <section>
+            <h2>It's fun?</h2>
+          </section>
+        </section>
+
+        <section>
+          <section>
+            <h1>How?</h1>
           </section>
         </section>
       </div>
@@ -93,8 +189,8 @@
 				progress: false,
 				history: true,
 				center: true,
-        width: 1280,
-        height: 800,
+        width: 1024,
+        height: 768,
 
 				transition: 'fade', // none/fade/slide/convex/concave/zoom
 

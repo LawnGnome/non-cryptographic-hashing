@@ -6,9 +6,14 @@ SBox?
 SuperFastHash as an example of problems
 
 
-Why:
+What:
 
-Basic theory:
+Why:
+- Want to see what's in a set without storing data
+- Interoperability
+- It's fun?
+
+How (basic theory):
 - Avalanche effect
   - Problem: input data that only varies on certain bits (eg ASCII text)
     00011000
@@ -16,6 +21,7 @@ Basic theory:
     00001000
 
     000xx000
+- Usual operations: xor, multiply (utilising integer overflow), bitshift
 - Mixing function
 - Well chosen primes
   - Multiplying or dividing/modulo by a prime reduces collisions
@@ -24,10 +30,26 @@ Considerations:
 - Endianness: some functions only support one or the other (or, more commonly, give different results on each)
 - Memory use
 - CPU use
+- Environment: I'll come back to this with an example
 
 Rating:
 - Memory and CPU provide useful metrics
 - Distribution of results
 - Collisions
   - Those two are related, but subtly different: distribution is important when building hash tables, for instance
-- 
+
+For each (32 bit version):
+  - Break down algorithm into a flow diagram (animated if time)
+  - Show Python implementation
+  - Look at results
+
+  - MurmurHash3:
+    - More complex algorithm; good example of CPython not being very fast
+    - Lots of uint32() to preserve overflow behaviour, which is ugly
+    - Not actually any better in terms of collisions
+    - Good example of your environment mattering: in C, it's an excellent choice because it's generally faster than the byte-at-a-time algorithms, but in Python it's the opposite because of the underlying data structures
+
+Evaluate against each other:
+  - CPU
+  - Memory
+  - Distribution

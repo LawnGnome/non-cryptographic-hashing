@@ -37,6 +37,11 @@
   }
 
   .child-loop(@n);
+
+  & > * {
+    margin: 0;
+    padding: 0;
+  }
 }
 
 .cycle-4 {
@@ -80,4 +85,10 @@
   .scroll(4, 1s);
 }
 
-/* vim: set ft=css nocin ai et ts=2 sw=2: */
+// Specific styles.
+
+#hash-functions {
+  .cycle(4, 2s);
+}
+
+/* vim: set nocin ai et ts=2 sw=2: */
