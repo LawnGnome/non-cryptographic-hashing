@@ -5,20 +5,6 @@ provided.
 
 Several assets used in this talk are licensed differently. These are:
 
-## Images
-
-### CC-BY 2.0
-
-
-### CC-BY-SA 2.0
-
-
-### Public Domain
-
-
-### Other
-
-
 ## Fonts
 
 ### Apache License
