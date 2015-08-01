@@ -365,6 +365,7 @@ def fnv1a32(data: bytes) -&gt; uint32:
             </aside>
           </section>
 
+          <!--
           <section>
             <h2>FNV-1a</h2>
             <svg class="flowchart" width="1000" height="500">
@@ -392,6 +393,7 @@ def fnv1a32(data: bytes) -&gt; uint32:
               <path class="arrow" d="M590 290 V 340 C 590 440, 410 440, 410 340 V 290" />
             </svg>
           </section>
+          -->
 
           <section>
             <h3><code>fnv1a32(b"ab")</code></h3>
@@ -529,8 +531,9 @@ def fnv1a32(data: bytes) -&gt; uint32:
             <h1>Shootout</h1>
             <aside class="notes">
               Let's look at a few functions (specifically, the 32 bit versions
-              where appropriate). Firstly, though, we need a way to compare
-              them.
+              where appropriate). I've chosen functions that are feasible to
+              implement in Python and generally considered to be among the
+              state of the art. Firstly, though, we need a way to compare them.
             </aside>
           </section>
 
@@ -557,8 +560,438 @@ def fnv1a32(data: bytes) -&gt; uint32:
             <aside class="notes">
               We can look at collisions. I'm going to test each algorithm we
               look at against two input sets: OS X's /usr/share/dict/words, and
-              the numbers 0-1000000 represented as strings.
+              the numbers 0-235885 (so it's the same size as the words)
+              represented as strings.
             </aside>
+          </section>
+        </section>
+
+        <section>
+          <section>
+            <h1>FNV-1a</h1>
+            <aside class="notes">
+              Since we've already looked at FNV-1a in some detail, let's look
+              at some results for it.
+            </aside>
+          </section>
+
+          <section>
+            <h2>FNV-1a</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Corpus</th>
+                  <th>CPU time (s)</th>
+                  <th>Collisions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Numbers</td>
+                  <td>1.633929</td>
+                  <td>0</td>
+                </tr>
+                <tr>
+                  <td>Words</td>
+                  <td>2.556861</td>
+                  <td>5 (0.002%)</td>
+                </tr>
+              </tbody>
+            </table>
+            <aside class="notes">
+              There are collisions in the word corpus. This isn't really
+              unexpected: we're only getting 32 bit values, and given the
+              birthday paradox, there's a greater than 75% chance of a
+              collision for a naïve hash function with more than 200000 inputs.
+            </aside>
+          </section>
+
+          <section>
+            <h2>FNV-1a</h2>
+            <img src="images/fnv1a32.png">
+            <aside class="notes">
+              <p>
+                Another way to visualise the distribution besides just the
+                number of collisions is to map it out. I've shamelessly stolen
+                this approach from Ian Boyd, who wrote a seminal StackExchange
+                essay on hashing functions three years ago.
+              </p>
+              <p>
+                White dots indicate unused values within the output.
+              </p>
+              <p>
+                Basically, you want this to look like noise. FNV-1a is pretty
+                good on this count.
+              </p>
+            </aside>
+          </section>
+        </section>
+
+        <section>
+          <section id="mm3-title">
+            <h1>MurmurHash3</h1>
+            <aside class="notes">
+              MurmurHash3 is another relatively simple to implement hashing
+              function. As the name implies, it's the third revision of a
+              function designed by Austin Appleby.
+            </aside>
+          </section>
+
+          <section id="mm3">
+            <h2>MurmurHash3</h2>
+            <pre><code class="python" data-trim style="font-size: 0.37em">
+def murmurhash3(data: bytes, seed: uint32) -> uint32:
+    c1 = uint32(0xcc9e2d51)
+    c2 = uint32(0x1b873593)
+    r1 = uint32(15)
+    r2 = uint32(13)
+    m = uint32(5)
+    n = uint32(0xe6546b64)
+
+    hash = see
+
+    i = 0
+    while i < len(data):
+        c = data[i:i+4]
+        i += 4
+
+        if len(c) == 4:
+            k = uint32(unpack("=L", c)[0])
+            k *= c1
+            k = (k << r1) | (k >> (uint32(32) - r1))
+            k *= c2
+            hash ^= k
+            hash = (hash << r2) | (hash >> (uint32(32) - r2))
+            hash = hash * m + n
+        else:
+            k = uint32(0)
+            if len(c) == 3:
+                k ^= uint32(c[2] << 16)
+            if len(c) >= 2:
+                k ^= uint32(c[1] << 8)
+            if len(c) >= 1:
+                k ^= uint32(c[0])
+                k *= c1
+                k = (k << r1) | (k >> (uint32(32) - r1))
+                k *= c2
+                hash ^= k
+
+    hash ^= uint32(len(data))
+    hash ^= uint32(hash >> 16)
+    hash *= uint32(0x85ebca6b)
+    hash ^= uint32(hash << 13)
+    hash *= uint32(0xc2b2ae35)
+    hash ^= uint32(hash >> 16)
+
+    return hash
+            </code></pre>
+          </section>
+
+          <section>
+            <h2>MurmurHash3</h2>
+            <pre><code class="python" data-trim>
+def murmurhash3(data: bytes, seed: uint32) -> uint32:
+    c1 = uint32(0xcc9e2d51)
+    c2 = uint32(0x1b873593)
+    r1 = uint32(15)
+    r2 = uint32(13)
+    m = uint32(5)
+    n = uint32(0xe6546b64)
+
+    hash = seed
+            </code></pre>
+          </section>
+
+          <section>
+            <h2>MurmurHash3</h2>
+            <pre><code class="python" data-trim>
+while i < len(data):
+    c = data[i:i+4]
+    i += 4
+            </code></pre>
+            <aside class="notes">
+              Grab a four byte chunk. MurmurHash is unusual in that it operates
+              on words at a time, not bytes.
+            </aside>
+          </section>
+
+          <section>
+            <h2>MurmurHash3</h2>
+            <pre><code class="python" data-trim style="font-size: 1.05em">
+if len(c) == 4:
+    k = uint32(unpack("=L", c)[0])
+    k *= c1
+    k = (k << r1) | (k >> (uint32(32) - r1))
+    k *= c2
+    hash ^= k
+    hash = (hash << r2) | (hash >> (uint32(32) - r2))
+    hash = hash * m + n
+            </code></pre>
+            <aside class="notes">
+              The use of struct.unpack probably seems anachronistic now, but
+              it's actually quicker than int.from_bytes.
+            </aside>
+          </section>
+
+          <section>
+            <h2>MurmurHash3</h2>
+            <pre><code class="python" data-trim style="font-size: 1.15em">
+else:
+    k = uint32(0)
+    if len(c) == 3:
+        k ^= uint32(c[2] << 16)
+    if len(c) >= 2:
+        k ^= uint32(c[1] << 8)
+    if len(c) >= 1:
+        k ^= uint32(c[0])
+        k *= c1
+        k = (k << r1) | (k >> (uint32(32) - r1))
+        k *= c2
+        hash ^= k
+            </code></pre>
+            <aside class="notes">
+              Go through some gymnastics for the last few bytes to ensure
+              they're properly mixed into the hash value. The use of multiple
+              mixing functions is common in hash functions that deal with more
+              than one byte at a time.
+            </aside>
+          </section>
+
+          <section>
+            <h2>MurmurHash3</h2>
+            <pre><code class="python" data-trim>
+hash ^= uint32(len(data))
+hash ^= uint32(hash >> 16)
+hash *= uint32(0x85ebca6b)
+hash ^= uint32(hash << 13)
+hash *= uint32(0xc2b2ae35)
+hash ^= uint32(hash >> 16)
+
+return hash
+            </code></pre>
+            <aside class="notes">
+              Finally, after all mixing, some postprocessing occurs. This is
+              common in newer hash functions: with careful chosen values, you
+              can attempt to invoke additional avalanching.
+            </aside>
+          </section>
+
+          <section>
+            <h2>MurmurHash3</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Corpus</th>
+                  <th>CPU time (s)</th>
+                  <th>Collisions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Numbers</td>
+                  <td>4.965808</td>
+                  <td>5 (0.002%)</td>
+                </tr>
+                <tr>
+                  <td>Words</td>
+                  <td>4.409535</td>
+                  <td>5 (0.002%)</td>
+                </tr>
+              </tbody>
+            </table>
+            <aside class="notes">
+              A few more collisions, which is unfortunate. Much more
+              importantly, though, it's almost three times slower than FNV-1a.
+              This is due to CPython being relatively slow, the large number of
+              uint32() objects that have to be instantiatied to prevent
+              overflow, and the chunking behaviour. In C, though, none of these
+              are issues.
+            </aside>
+          </section>
+
+          <section>
+            <h2>MurmurHash3</h2>
+            <img src="images/murmurhash3.png">
+          </section>
+        </section>
+
+        <section>
+          <section>
+            <h1>xxHash</h1>
+            <aside class="notes">
+              xxHash is another relatively new hash function that has been
+              quickly adopted by a number of projects, including pfSense and
+              TeamViewer. (For what, I don't know.) It has a similar
+              construction to MurmurHash3, except it reads 16 bytes at a time.
+            </aside>
+          </section>
+
+          <section>
+            <h2>xxHash</h2>
+            <pre><code class="python" data-trim style="font-size: 0.25em">
+def xxhash32(data: bytes, seed: uint32) -> uint32:
+    primes = [uint32(n) for n in (
+        2654435761,
+        2246822519,
+        3266489917,
+        668265263,
+        374761393
+    )]
+
+    def rotl(x: uint32, r) -> uint32:
+        return (x << uint32(r)) | (x >> uint32(32 - r))
+
+    offset = 0
+    def get32bits():
+        nonlocal offset
+
+        chunk = data[offset:offset+4]
+        offset += 4
+        return uint32(unpack("=L", chunk)[0])
+
+    hash = uint32(0)
+
+    if len(data) >= 16:
+        v1 = seed + primes[0] + primes[1]
+        v2 = seed + primes[1]
+        v3 = seed
+        v4 = seed - primes[0]
+
+        def mix(v: uint32, chunk: uint32) -> uint32:
+            v += chunk * primes[1]
+            v = rotl(v, 13)
+            return v * primes[0]
+
+        while offset <= (len(data) - 16):
+            v1 = mix(v1, get32bits())
+            v2 = mix(v2, get32bits())
+            v3 = mix(v3, get32bits())
+            v4 = mix(v4, get32bits())
+
+        hash = rotl(v1, 1) + rotl(v2, 7) + rotl(v3, 12) + rotl(v4, 18)
+    else:
+        hash = seed + primes[4]
+
+    hash += uint32(len(data))
+
+    while (offset + 4) < len(data):
+        hash += get32bits() * primes[2]
+        hash = rotl(hash, 17) * primes[3]
+
+    while offset < len(data):
+        hash += uint32(data[offset]) * primes[4]
+        offset += 1
+        hash = rotl(hash, 11) * primes[0]
+
+    hash ^= hash >> uint32(15)
+    hash *= primes[1]
+    hash ^= hash >> uint32(13)
+    hash *= primes[2]
+    hash ^= hash >> uint32(16)
+
+    return hash
+            </code></pre>
+            <aside class="notes">
+              This one's even bigger &mdash; probably as big as you'd really
+              ever want to implement &mdash; but the principle is the same.
+              Some primes are defined atop, some utility functions are defined,
+              and then there are three mixing functions: one for when you can
+              read 16 bytes, one for 4 bytes, and one for 1 byte.
+            </aside>
+          </section>
+
+          <section>
+            <h2>xxHash</h2>
+            <pre><code class="python" data-trim style="font-size: 1.3em">
+def mix(v: uint32, chunk: uint32) -> uint32:
+    v += chunk * primes[1]
+    v = rotl(v, 13)
+    return v * primes[0]
+
+while offset <= (len(data) - 16):
+    v1 = mix(v1, get32bits())
+    v2 = mix(v2, get32bits())
+    v3 = mix(v3, get32bits())
+    v4 = mix(v4, get32bits())
+
+hash = rotl(v1, 1) + rotl(v2, 7) +
+       rotl(v3, 12) + rotl(v4, 18)
+            </code></pre>
+            <aside class="notes">
+              Here's the 16 byte mixing function. Note that it keeps four
+              running values and combines them at the end.
+            </aside>
+          </section>
+
+          <section>
+            <h2>xxHash</h2>
+            <pre><code class="python" data-trim style="font-size: 1.3em">
+while (offset + 4) < len(data):
+    hash += get32bits() * primes[2]
+    hash = rotl(hash, 17) * primes[3]
+
+while offset < len(data):
+    hash += uint32(data[offset]) * primes[4]
+    offset += 1
+    hash = rotl(hash, 11) * primes[0]
+            </code></pre>
+            <aside class="notes">
+              There are then the 4 and 1 byte mixers, which are used until all
+              the data has been mixed.
+            </aside>
+          </section>
+
+          <section>
+            <h2>xxHash</h2>
+            <pre><code class="python" data-trim style="font-size: 1.3em">
+hash ^= hash >> uint32(15)
+hash *= primes[1]
+hash ^= hash >> uint32(13)
+hash *= primes[2]
+hash ^= hash >> uint32(16)
+
+return hash
+            </code></pre>
+            <aside class="notes">
+              Finally, a post processing step. Notice how these all look pretty
+              similar now you know how to break them down?
+            </aside>
+          </section>
+
+          <section>
+            <h2>xxHash</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Corpus</th>
+                  <th>CPU time (s)</th>
+                  <th>Collisions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Numbers</td>
+                  <td>4.032726</td>
+                  <td>12 (0.005%)</td>
+                </tr>
+                <tr>
+                  <td>Words</td>
+                  <td>3.337822</td>
+                  <td>0</td>
+                </tr>
+              </tbody>
+            </table>
+            <aside class="notes">
+              No word collisions, which probably indicates the type of data
+              xxHash was most tested with. The difference between the numbers
+              and words is bigger than the other functions due to the ability
+              to process more at a time: there are more cache hits.
+            </aside>
+          </section>
+
+          <section>
+            <h2>xxHash</h2>
+            <img src="images/xxhash32.png">
           </section>
         </section>
       </div>
