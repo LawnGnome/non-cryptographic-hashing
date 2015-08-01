@@ -172,6 +172,88 @@
           <section>
             <h1>How?</h1>
           </section>
+
+          <section>
+            <pre><code class="python" data-trim>
+def hash_function(data: bytes) -&gt; int:
+  for chunk in data:
+    hash = cleverness(hash, chunk)
+
+  return hash
+            </code></pre>
+            <aside class="notes">
+              <p>
+                Broadly, this is how every hash function is constructed. Easy,
+                huh? (Python provides a cleverness function, I'm sure.)
+              </p>
+              <p>
+                Chunk sizes vary, but are most commonly bytes or 32-bit words.
+              </p>
+              <p>
+                As an aside, cryptographic hash functions usually use a
+                Merkle-Damgård (DAM-gour(d)) construction, which adds padding
+                in a specific way, but is otherwise a fancy (and hard) way of
+                saying this.
+              </p>
+            </aside>
+          </section>
+
+          <section>
+            <h2>Cleverness</h2>
+            <ul>
+              <li>Unsigned, fixed length integers</li>
+              <li>Bitwise operations (especially <code>xor</code>)</li>
+              <li>Multiplication</li>
+              <li>Modulo</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>Integers</h2>
+            <pre><code>  0xffffffff
++ 0x00000001
+= 0x00000000</code></pre>
+            <aside class="notes">
+              A brief digression into integers. Python very helpfully provides
+              unlimited precision integers, but these constructions generally
+              rely on integer overflow: specifically, that integers will wrap
+              and only the lowest bits will be preserved.
+            </aside>
+          </section>
+
+          <section>
+            <h2>NumPy</h2>
+            <pre><code class="python" data-trim>
+from numpy import uint32
+            </code></pre>
+            <aside class="notes">
+              On the bright side, NumPy gives us a good uint32 type that
+              supports the semantics we need.
+            </aside>
+          </section>
+
+          <section>
+            <code><pre>&gt;&gt;&gt; from numpy import uint32
+&gt;&gt;&gt; a = uint32(42)
+&gt;&gt;&gt; a *= 1
+&gt;&gt;&gt; print(type(a))
+&lt;class 'numpy.<strong>int64</strong>'&gt;</pre></code>
+            <aside class="notes">
+              Unfortunately, it still autopromotes when you give it Python
+              integers.
+            </aside>
+          </section>
+
+          <section>
+            <code><pre>&gt;&gt;&gt; from numpy import uint32
+&gt;&gt;&gt; a = uint32(42)
+&gt;&gt;&gt; a *= <strong>uint32(1)</strong>
+&gt;&gt;&gt; print(type(a))
+&lt;class 'numpy.<strong>uint32</strong>'&gt;</pre></code>
+            <aside class="notes">
+              You're going to see some ugly code. I apologise.
+            </aside>
+          </section>
         </section>
       </div>
 

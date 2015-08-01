@@ -57,10 +57,25 @@
 
 .reveal pre code {
   font-family: "Source Code Pro", monospace;
-  font-size: 2em;
+  font-size: 1.5em;
   font-weight: 600;
   line-height: 1.4;
   max-height: 10000em;
+}
+
+.reveal code pre {
+  background: white;
+  font-family: "Source Code Pro", monospace;
+  font-size: 1em;
+  font-weight: 600;
+  line-height: 1.4;
+  overflow: hidden;
+  max-height: 10000em;
+}
+
+.reveal ul {
+  list-style: none;
+  margin-left: 0;
 }
 
 img {
@@ -127,54 +142,6 @@ img {
 .hljs-string,
 .hljs-title {
   color: #00237f !important;
-}
-
-/* svg */
-.flowchart line,
-.bc line {
-  stroke: black;
-  stroke-width: 10px;
-}
-
-.flowchart line.arrow,
-.bc line.arrow {
-  marker-end: url(#arrowhead);
-}
-
-.flowchart text {
-  fill: black;
-  stroke: none;
-}
-
-.flowchart text.code {
-  font-family: "Source Code Pro", monospace;
-  font-weight: 600;
-}
-
-.bc .outline {
-  fill: none;
-  stroke: black;
-  stroke-width: 10px;
-}
-
-.bc .fill {
-  mix-blend-mode: darken;
-  stroke: none;
-}
-
-.bc .old {
-  fill: #ff4444;
-  fill-opacity: 0.8;
-}
-
-.bc .new {
-  fill: aqua;
-  fill-opacity: 0.8;
-  stroke: none;
-}
-
-.bc .label {
-  text-anchor: middle;
 }
 
 /* vim: set nocin ai et ts=2 sw=2: */
