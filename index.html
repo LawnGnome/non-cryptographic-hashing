@@ -141,12 +141,23 @@
           </section>
 
           <section>
+            <h2>Hash tables</h2>
+            <aside class="notes">
+              You need some way of distributing things into buckets. Taking a
+              hash of the key is usually the easiest way: in this case, you're
+              not interested in security, but you are interested in speed.
+              (Why would you want to implement a hash table nowadays?)
+              <!-- TODO: if time, show a diagram of distribution -->
+            </aside>
+          </section>
+
+          <section>
             <h2>What have I seen?</h2>
             <aside class="notes">
-              Python provides a set type, but when you're dealing with a lot of
-              data you may not want to keep everything in memory. Hashing it
-              first can help, particularly if you're doing something that can
-              withstand the odd false positive.
+              Many languages provide set types, but when you're dealing with a
+              lot of data you may not want to keep everything in memory.
+              Hashing it first can help, particularly if you're doing something
+              that can withstand the odd false positive.
             </aside>
           </section>
 
@@ -237,7 +248,7 @@
           <section>
             <pre><code class="python" data-trim>
 def hash_function(data: bytes) -&gt; int:
-  for chunk in data:
+  for chunk in md_pad(data):
     hash = cleverness(hash, chunk)
 
   return hash
@@ -282,44 +293,10 @@ def hash_function(data: bytes) -&gt; int:
 + 0x00000001
 = 0x00000000</code></pre>
             <aside class="notes">
-              A brief digression into integers. Python very helpfully provides
-              unlimited precision integers, but these constructions generally
-              rely on integer overflow: specifically, that integers will wrap
-              and only the lowest bits will be preserved.
-            </aside>
-          </section>
-
-          <section>
-            <h2>NumPy</h2>
-            <pre><code class="python" data-trim>
-from numpy import uint32
-            </code></pre>
-            <aside class="notes">
-              On the bright side, NumPy gives us a good uint32 type that
-              supports the semantics we need.
-            </aside>
-          </section>
-
-          <section>
-            <code><pre>&gt;&gt;&gt; from numpy import uint32
-&gt;&gt;&gt; a = uint32(42)
-&gt;&gt;&gt; a *= 1
-&gt;&gt;&gt; print(type(a))
-&lt;class 'numpy.<strong>int64</strong>'&gt;</pre></code>
-            <aside class="notes">
-              Unfortunately, it still autopromotes when you give it Python
-              integers.
-            </aside>
-          </section>
-
-          <section>
-            <code><pre>&gt;&gt;&gt; from numpy import uint32
-&gt;&gt;&gt; a = uint32(42)
-&gt;&gt;&gt; a *= <strong>uint32(1)</strong>
-&gt;&gt;&gt; print(type(a))
-&lt;class 'numpy.<strong>uint32</strong>'&gt;</pre></code>
-            <aside class="notes">
-              You're going to see some ugly code. I apologise.
+              Integer overflow behaviour is used heavily. In higher level
+              languages like Python, you may have issues with the integer type
+              being unlimited precision, but most of this kind of work is
+              usually done in C anyway.
             </aside>
           </section>
 
@@ -341,29 +318,31 @@ from numpy import uint32
           <section>
             <h1>FNV-1a</h1>
             <aside class="notes">
-              Let's walk through an example: in this case, FNV-1a. FNV was
-              created by Glenn Fowler, Landon Curt Noll and Phong Vo in 1991,
-              and later revised to improve its avalanche behaviour. It's still
-              widely used today, and is simple enough that we can step through
-              it and see the principles noted above in action.
+              Let's walk slowly through an example: in this case, FNV-1a. FNV
+              was created by Glenn Fowler, Landon Curt Noll and Phong Vo in
+              1991, and later revised to improve its avalanche behaviour. It's
+              still widely used today, and is simple enough that we can step
+              through it and see the principles noted above in action.
             </aside>
           </section>
 
           <section>
             <h2>FNV-1a</h2>
-            <pre><code class="python" data-trim>
-def fnv1a32(data: bytes) -&gt; uint32:
-  hash = uint32(2166136261)
-  for byte in data:
-    hash ^= uint32(byte)
-    hash *= uint32(16777619)
-  return hash
+            <pre><code class="c" data-trim>
+uint32_t fnv1a32(char *data, size_t len) {
+  uint32_t hash = 2166136261;
+  for (char *byte = data; byte < (data + len); byte++) {
+    hash ^= *byte;
+    hash *= 16777619;
+  }
+  return hash;
+}
             </code></pre>
             <aside class="notes">
-              Here's the Python implementation of the algorithm. Note the ugly
-              uint32() calls, as previously threatened. Conceptually, though,
-              it's very simple: for each byte (since it's a bytewise
-              algorithm), we xor the hash value, then multiply it.
+              Here's the C implementation of the algorithm.  Conceptually, it's
+              very simple: for each byte (since it's a bytewise algorithm), we
+              xor the hash value, then multiply it. Note that we'll see lots of
+              magic numbers.
             </aside>
           </section>
 
@@ -398,17 +377,17 @@ def fnv1a32(data: bytes) -&gt; uint32:
           -->
 
           <section>
-            <h3><code>fnv1a32(b"ab")</code></h3>
-            <pre><code class="python">  def fnv1a32(data: bytes) -&gt; uint32:
-&gt;   hash = uint32(2166136261)
-    for byte in data:
-      hash ^= uint32(byte)
-      hash *= uint32(16777619)
-    return hash</code></pre>
-            <h4><code>hash</code> (binary):</h4>
-            <code><pre>1000 0001 0001 1100 1001 1101 1100 0101</pre></code>
-            <h4><code>byte</code> (binary):</h4>
-            <code><pre>(unset)</pre></code>
+            <h3><code>fnv1a32("ab", 2)</code></h3>
+            <pre><code class="c">  uint32_t fnv1a32(char *data, size_t len) {
+&gt;   uint32_t hash = 2166136261;
+    for (char *byte = data; byte < (data + len); byte++) {
+      hash ^= *byte;
+      hash *= 16777619;
+    }
+    return hash;
+  }</code></pre>
+            <code><pre>hash:  1000 0001 0001 1100 1001 1101 1100 0101</pre></code>
+            <code><pre>*byte: (unset)</pre></code>
             <aside class="notes">
               First, we set our hash value to a randomly selected number. This
               isn't actually a prime: it's not chosen for its dispersal
@@ -419,34 +398,34 @@ def fnv1a32(data: bytes) -&gt; uint32:
           </section>
 
           <section>
-            <h3><code>fnv1a32(b"ab")</code></h3>
-            <pre><code class="python">  def fnv1a32(data: bytes) -&gt; uint32:
-    hash = uint32(2166136261)
-&gt;   for byte in data:
-      hash ^= uint32(byte)
-      hash *= uint32(16777619)
-    return hash</code></pre>
-            <h4><code>hash</code> (binary):</h4>
-            <code><pre>1000 0001 0001 1100 1001 1101 1100 0101</pre></code>
-            <h4><code>byte</code> (binary):</h4>
-            <code><pre>0000 0000 0000 0000 0000 0000 0110 0001</pre></code>
+            <h3><code>fnv1a32("ab", 2)</code></h3>
+            <pre><code class="c">  uint32_t fnv1a32(char *data, size_t len) {
+    uint32_t hash = 2166136261;
+&gt;   for (char *byte = data; byte < (data + len); byte++) {
+      hash ^= *byte;
+      hash *= 16777619;
+    }
+    return hash;
+  }</code></pre>
+            <code><pre>hash:  1000 0001 0001 1100 1001 1101 1100 0101</pre></code>
+            <code><pre>*byte:                               0110 0001</pre></code>
             <aside class="notes">
               Pick a byte (lowercase "a").
             </aside>
           </section>
 
           <section>
-            <h3><code>fnv1a32(b"ab")</code></h3>
-            <pre><code class="python">  def fnv1a32(data: bytes) -&gt; uint32:
-    hash = uint32(2166136261)
-    for byte in data:
-&gt;     hash ^= uint32(byte)
-      hash *= uint32(16777619)
-    return hash</code></pre>
-            <h4><code>hash</code> (binary):</h4>
-            <code><pre>1000 0001 0001 1100 1001 1101 1<strong>01</strong>0 010<strong>0</strong></pre></code>
-            <h4><code>byte</code> (binary):</h4>
-            <code><pre>0000 0000 0000 0000 0000 0000 0110 0001</pre></code>
+            <h3><code>fnv1a32("ab", 2)</code></h3>
+            <pre><code class="c">  uint32_t fnv1a32(char *data, size_t len) {
+    uint32_t hash = 2166136261;
+    for (char *byte = data; byte < (data + len); byte++) {
+&gt;     hash ^= *byte;
+      hash *= 16777619;
+    }
+    return hash;
+  }</code></pre>
+            <code><pre>hash:  1000 0001 0001 1100 1001 1101 1<strong>01</strong>0 010<strong>0</strong></pre></code>
+            <code><pre>*byte:                               0110 0001</pre></code>
             <aside class="notes">
               Now we do the exclusive-or. Note that only three bits in hash
               actually changed. Not very avalanchey!
@@ -454,17 +433,17 @@ def fnv1a32(data: bytes) -&gt; uint32:
           </section>
 
           <section>
-            <h3><code>fnv1a32(b"ab")</code></h3>
-            <pre><code class="python">  def fnv1a32(data: bytes) -&gt; uint32:
-    hash = uint32(2166136261)
-    for byte in data:
-      hash ^= uint32(byte)
-&gt;     hash *= uint32(16777619)
-    return hash</code></pre>
-            <h4><code>hash</code> (binary):</h4>
-            <code><pre>1<strong>11</strong>0 0<strong>1</strong>0<strong>0</strong> 000<strong>0</strong> 1100 <strong>0</strong>0<strong>10</strong> 1<strong>0</strong>01 <strong>001</strong>0 <strong>1</strong>100</pre></code>
-            <h4><code>byte</code> (binary):</h4>
-            <code><pre>0000 0000 0000 0000 0000 0000 0110 0001</pre></code>
+            <h3><code>fnv1a32("ab", 2)</code></h3>
+            <pre><code class="c">  uint32_t fnv1a32(char *data, size_t len) {
+    uint32_t hash = 2166136261;
+    for (char *byte = data; byte < (data + len); byte++) {
+      hash ^= *byte;
+&gt;     hash *= 16777619;
+    }
+    return hash;
+  }</code></pre>
+            <code><pre>hash:  1<strong>11</strong>0 0<strong>1</strong>0<strong>0</strong> 000<strong>0</strong> 1100 <strong>0</strong>0<strong>10</strong> 1<strong>0</strong>01 <strong>001</strong>0 <strong>1</strong>100</pre></code>
+            <code><pre>*byte:                               0110 0001</pre></code>
             <aside class="notes">
               Now we see some changes! The sharp of eye would have noticed that
               this prime is close to 2^24, which means that we're effectively
@@ -474,17 +453,17 @@ def fnv1a32(data: bytes) -&gt; uint32:
           </section>
 
           <section>
-            <h3><code>fnv1a32(b"ab")</code></h3>
-            <pre><code class="python">  def fnv1a32(data: bytes) -&gt; uint32:
-    hash = uint32(2166136261)
-&gt;   for byte in data:
-      hash ^= uint32(byte)
-      hash *= uint32(16777619)
-    return hash</code></pre>
-            <h4><code>hash</code> (binary):</h4>
-            <code><pre>1110 0100 0000 1100 0010 1001 0010 1100</pre></code>
-            <h4><code>byte</code> (binary):</h4>
-            <code><pre>0000 0000 0000 0000 0000 0000 0110 00<strong>10</strong></pre></code>
+            <h3><code>fnv1a32("ab", 2)</code></h3>
+            <pre><code class="c">  uint32_t fnv1a32(char *data, size_t len) {
+    uint32_t hash = 2166136261;
+&gt;   for (char *byte = data; byte < (data + len); byte++) {
+      hash ^= *byte;
+      hash *= 16777619;
+    }
+    return hash;
+  }</code></pre>
+            <code><pre>hash:  1110 0100 0000 1100 0010 1001 0010 1100</pre></code>
+            <code><pre>*byte:                               0110 00<strong>10</strong></pre></code>
             <aside class="notes">
               Now we do it again with b, which is only two bits different from
               a.
@@ -492,34 +471,34 @@ def fnv1a32(data: bytes) -&gt; uint32:
           </section>
 
           <section>
-            <h3><code>fnv1a32(b"ab")</code></h3>
-            <pre><code class="python">  def fnv1a32(data: bytes) -&gt; uint32:
-    hash = uint32(2166136261)
-    for byte in data:
-&gt;     hash ^= uint32(byte)
-      hash *= uint32(16777619)
-    return hash</code></pre>
-            <h4><code>hash</code> (binary):</h4>
-            <code><pre>1110 0100 0000 1100 0010 1001 0<strong>10</strong>0 11<strong>1</strong>0</pre></code>
-            <h4><code>byte</code> (binary):</h4>
-            <code><pre>0000 0000 0000 0000 0000 0000 0110 0001</pre></code>
+            <h3><code>fnv1a32("ab", 2)</code></h3>
+            <pre><code class="c">  uint32_t fnv1a32(char *data, size_t len) {
+    uint32_t hash = 2166136261;
+    for (char *byte = data; byte < (data + len); byte++) {
+&gt;     hash ^= *byte;
+      hash *= 16777619;
+    }
+    return hash;
+  }</code></pre>
+            <code><pre>hash:  1110 0100 0000 1100 0010 1001 0<strong>10</strong>0 11<strong>1</strong>0</pre></code>
+            <code><pre>*byte:                               0110 0001</pre></code>
             <aside class="notes">
               Again, only three bits change when we do the xor.
             </aside>
           </section>
 
           <section>
-            <h3><code>fnv1a32(b"ab")</code></h3>
-            <pre><code class="python">  def fnv1a32(data: bytes) -&gt; uint32:
-    hash = uint32(2166136261)
-    for byte in data:
-      hash ^= uint32(byte)
-&gt;     hash *= uint32(16777619)
-    return hash</code></pre>
-            <h4><code>hash</code> (binary):</h4>
-            <code><pre><strong>0</strong>1<strong>0</strong>0 <strong>1</strong>10<strong>1</strong> 00<strong>1</strong>0 <strong>0</strong>10<strong>1</strong> 00<strong>0</strong>0 <strong>01</strong>01 <strong>1</strong>100 1<strong>0</strong>10</pre></code>
-            <h4><code>byte</code> (binary):</h4>
-            <code><pre>0000 0000 0000 0000 0000 0000 0110 0001</pre></code>
+            <h3><code>fnv1a32("ab", 2)</code></h3>
+            <pre><code class="c">  uint32_t fnv1a32(char *data, size_t len) {
+    uint32_t hash = 2166136261;
+    for (char *byte = data; byte < (data + len); byte++) {
+      hash ^= *byte;
+&gt;     hash *= 16777619;
+    }
+    return hash;
+  }</code></pre>
+            <code><pre>hash:  <strong>0</strong>1<strong>0</strong>0 <strong>1</strong>10<strong>1</strong> 00<strong>1</strong>0 <strong>0</strong>10<strong>1</strong> 00<strong>0</strong>0 <strong>01</strong>01 <strong>1</strong>100 1<strong>0</strong>10</pre></code>
+            <code><pre>*byte:                               0110 0001</pre></code>
             <aside class="notes">
               You can see how well distributed the changes are, even after only
               two bytes of input. Every nibble has one or two bits modified. A
@@ -534,8 +513,9 @@ def fnv1a32(data: bytes) -&gt; uint32:
             <aside class="notes">
               Let's look at a few functions (specifically, the 32 bit versions
               where appropriate). I've chosen functions that are feasible to
-              implement in Python and generally considered to be among the
-              state of the art. Firstly, though, we need a way to compare them.
+              implement in a variety of languages (so don't rely on anything in
+              particular) and are generally considered to be among the state of
+              the art. Firstly, though, we need a way to compare them.
             </aside>
           </section>
 
@@ -590,12 +570,12 @@ def fnv1a32(data: bytes) -&gt; uint32:
               <tbody>
                 <tr>
                   <td>Numbers</td>
-                  <td>1.633929</td>
+                  <td>0.323812</td>
                   <td>0</td>
                 </tr>
                 <tr>
                   <td>Words</td>
-                  <td>2.556861</td>
+                  <td>0.397108</td>
                   <td>5 (0.002%)</td>
                 </tr>
               </tbody>
@@ -1260,8 +1240,8 @@ def crc32(data: bytes) -> int:
 				progress: false,
 				history: true,
 				center: true,
-        width: 1024,
-        height: 768,
+        width: 1280,
+        height: 720,
 
 				transition: 'fade', // none/fade/slide/convex/concave/zoom
 
