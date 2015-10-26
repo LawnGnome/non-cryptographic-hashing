@@ -853,6 +853,7 @@ return hash;
                 <tr>
                   <th>Corpus</th>
                   <th>CPU time (ms)</th>
+                  <th>% FNV-1a</th>
                   <th>Collisions</th>
                 </tr>
               </thead>
@@ -860,27 +861,28 @@ return hash;
                 <tr>
                   <td>Numbers</td>
                   <td>69.10</td>
+                  <td>125%</td>
                   <td>4 (0.002%)</td>
                 </tr>
                 <tr>
                   <td>Words</td>
                   <td>69.23</td>
+                  <td>102%</td>
                   <td>6 (0.003%)</td>
                 </tr>
                 <tr>
                   <td>Holmes</td>
                   <td>0.95</td>
+                  <td>30%</td>
                   <td>0</td>
                 </tr>
               </tbody>
             </table>
             <aside class="notes">
-              A few more collisions, which is unfortunate. Much more
-              importantly, though, it's almost three times slower than FNV-1a.
-              This is due to CPython being relatively slow, the large number of
-              uint32() objects that have to be instantiatied to prevent
-              overflow, and the chunking behaviour. In C, though, none of these
-              are issues.
+              A few more collisions, which is unfortunate. It's slower for
+              small inputs than FNV-1a (which isn't surprising, given the extra
+              setup work), but way faster for larger inputs because it's
+              word-wise.
             </aside>
           </section>
 
@@ -903,112 +905,172 @@ return hash;
 
           <section>
             <h2>xxHash</h2>
-            <pre><code class="python" data-trim style="font-size: 0.25em">
-def xxhash32(data: bytes, seed: uint32) -> uint32:
-    primes = [uint32(n) for n in (
-        2654435761,
-        2246822519,
-        3266489917,
-        668265263,
-        374761393
-    )]
+            <pre><code class="c" data-trim style="font-size: 0.25em">
+const uint32_t xxhash32_prime1 = 2654435761U;
+const uint32_t xxhash32_prime2 = 2246822519U;
+const uint32_t xxhash32_prime3 = 3266489917U;
+const uint32_t xxhash32_prime4 = 668265263U;
+const uint32_t xxhash32_prime5 = 374761393U;
 
-    def rotl(x: uint32, r) -> uint32:
-        return (x << uint32(r)) | (x >> uint32(32 - r))
+inline uint32_t xxhash32_rotl(uint32_t x, int r) {
+  return (x &lt;&lt; r) | (x &gt;&gt; (32 - r));
+}
 
-    offset = 0
-    def get32bits():
-        nonlocal offset
+inline uint32_t xxhash32_mix(uint32_t v, uint32_t chunk) {
+  v += chunk * xxhash32_prime2;
+  v = xxhash32_rotl(v, 13);
+  return v * xxhash32_prime1;
+}
 
-        chunk = data[offset:offset+4]
-        offset += 4
-        return uint32(unpack("=L", chunk)[0])
+uint32_t xxhash32(const char *data, size_t len, uint32_t seed) {
+  const char *p = data;
+  const char *end = data + len;
 
-    hash = uint32(0)
+  uint32_t hash = 0;
 
-    if len(data) >= 16:
-        v1 = seed + primes[0] + primes[1]
-        v2 = seed + primes[1]
-        v3 = seed
-        v4 = seed - primes[0]
+  if (len &gt;= 16) {
+    uint32_t v1 = seed + xxhash32_prime1 + xxhash32_prime2;
+    uint32_t v2 = seed + xxhash32_prime2;
+    uint32_t v3 = seed;
+    uint32_t v4 = seed - xxhash32_prime1;
 
-        def mix(v: uint32, chunk: uint32) -> uint32:
-            v += chunk * primes[1]
-            v = rotl(v, 13)
-            return v * primes[0]
+    for (; p &lt;= (end - 16); p += 16) {
+      const uint32_t *chunk = (const uint32_t *) p;
 
-        while offset <= (len(data) - 16):
-            v1 = mix(v1, get32bits())
-            v2 = mix(v2, get32bits())
-            v3 = mix(v3, get32bits())
-            v4 = mix(v4, get32bits())
+      v1 = xxhash32_mix(v1, chunk[0]);
+      v2 = xxhash32_mix(v2, chunk[1]);
+      v3 = xxhash32_mix(v3, chunk[2]);
+      v4 = xxhash32_mix(v4, chunk[3]);
+    }
 
-        hash = rotl(v1, 1) + rotl(v2, 7) + rotl(v3, 12) + rotl(v4, 18)
-    else:
-        hash = seed + primes[4]
+    hash = xxhash32_rotl(v1, 1) +
+           xxhash32_rotl(v2, 7) +
+           xxhash32_rotl(v3, 12) +
+           xxhash32_rotl(v4, 18);
+  } else {
+    hash = seed + xxhash32_prime5;
+  }
 
-    hash += uint32(len(data))
+  for (; (p + 4) &lt;= end; p += 4) {
+    hash += *((const uint32_t *) p) * xxhash32_prime3;
+    hash = xxhash32_rotl(hash, 17) * xxhash32_prime4;
+  }
 
-    while (offset + 4) < len(data):
-        hash += get32bits() * primes[2]
-        hash = rotl(hash, 17) * primes[3]
+  for (; p &lt; end; p++) {
+    hash += ((uint8_t) *p) * xxhash32_prime5;
+    hash = xxhash32_rotl(hash, 11) * xxhash32_prime1;
+  }
 
-    while offset < len(data):
-        hash += uint32(data[offset]) * primes[4]
-        offset += 1
-        hash = rotl(hash, 11) * primes[0]
+  hash ^= hash &gt;&gt; 15;
+  hash *= xxhash32_prime2;
+  hash ^= hash &gt;&gt; 13;
+  hash *= xxhash32_prime3;
+  hash ^= hash &gt;&gt; 16;
 
-    hash ^= hash >> uint32(15)
-    hash *= primes[1]
-    hash ^= hash >> uint32(13)
-    hash *= primes[2]
-    hash ^= hash >> uint32(16)
-
-    return hash
+  return hash;
+}
             </code></pre>
             <aside class="notes">
               This one's even bigger &mdash; probably as big as you'd really
               ever want to implement &mdash; but the principle is the same.
-              Some primes are defined atop, some utility functions are defined,
-              and then there are three mixing functions: one for when you can
-              read 16 bytes, one for 4 bytes, and one for 1 byte.
+              (This is simplified.) Some primes are defined atop, some utility
+              functions are defined, and then there are three mixing functions:
+              one for when you can read 16 bytes, one for 4 bytes, and one for
+              1 byte.
             </aside>
           </section>
 
           <section>
             <h2>xxHash</h2>
-            <pre><code class="python" data-trim style="font-size: 1.3em">
-def mix(v: uint32, chunk: uint32) -> uint32:
-    v += chunk * primes[1]
-    v = rotl(v, 13)
-    return v * primes[0]
-
-while offset <= (len(data) - 16):
-    v1 = mix(v1, get32bits())
-    v2 = mix(v2, get32bits())
-    v3 = mix(v3, get32bits())
-    v4 = mix(v4, get32bits())
-
-hash = rotl(v1, 1) + rotl(v2, 7) +
-       rotl(v3, 12) + rotl(v4, 18)
+            <pre><code class="c" data-trim style="font-size: 1.3em">
+uint32_t v1 = seed + xxhash32_prime1 + xxhash32_prime2;
+uint32_t v2 = seed + xxhash32_prime2;
+uint32_t v3 = seed;
+uint32_t v4 = seed - xxhash32_prime1;
             </code></pre>
             <aside class="notes">
-              Here's the 16 byte mixing function. Note that it keeps four
-              running values and combines them at the end.
+              The 16 byte case starts by using the seed and two of the five
+              primes to set up four working variables.
             </aside>
           </section>
 
           <section>
             <h2>xxHash</h2>
-            <pre><code class="python" data-trim style="font-size: 1.3em">
-while (offset + 4) < len(data):
-    hash += get32bits() * primes[2]
-    hash = rotl(hash, 17) * primes[3]
+            <pre><code class="c" data-trim style="font-size: 1.3em">
+for (; p &lt;= (end - 16); p += 16) {
+  const uint32_t *chunk = (const uint32_t *) p;
 
-while offset < len(data):
-    hash += uint32(data[offset]) * primes[4]
-    offset += 1
-    hash = rotl(hash, 11) * primes[0]
+  v1 = xxhash32_mix(v1, chunk[0]);
+  v2 = xxhash32_mix(v2, chunk[1]);
+  v3 = xxhash32_mix(v3, chunk[2]);
+  v4 = xxhash32_mix(v4, chunk[3]);
+}
+            </code></pre>
+            <aside class="notes">
+              Then it reads 16 bytes at a time and mixes each 4 byte chunk into
+              those working variables.
+            </aside>
+          </section>
+
+          <section>
+            <h2>xxHash</h2>
+            <pre><code class="c" data-trim style="font-size: 1.3em">
+inline uint32_t xxhash32_rotl(uint32_t x, int r) {
+  return (x &lt;&lt; r) | (x &gt;&gt; (32 - r));
+}
+
+inline uint32_t xxhash32_mix(uint32_t v, uint32_t in) {
+  v += in * xxhash32_prime2;
+  v = xxhash32_rotl(v, 13);
+  return v * xxhash32_prime1;
+}
+            </code></pre>
+            <aside class="notes">
+              The mixing function itself is very similar to MurmurHash3:
+              multiply by a prime, rotate, and multiply again.
+            </aside>
+          </section>
+
+          <section>
+            <h2>xxHash</h2>
+            <pre><code class="c" data-trim style="font-size: 1.3em">
+hash = xxhash32_rotl(v1, 1) +
+       xxhash32_rotl(v2, 7) +
+       xxhash32_rotl(v3, 12) +
+       xxhash32_rotl(v4, 18);
+            </code></pre>
+            <aside class="notes">
+              Finally, we set the hash, then move onto the 4 byte case to
+              handle trailing data.
+            </aside>
+          </section>
+
+          <section>
+            <h2>xxHash</h2>
+            <pre><code class="c" data-trim style="font-size: 1.3em">
+if (len &gt;= 16) {
+  /* what you just saw */
+} else {
+  hash = seed + xxhash32_prime5;
+}
+            </code></pre>
+            <aside class="notes">
+              There's a separate initialisation case for small inputs.
+            </aside>
+          </section>
+
+          <section>
+            <h2>xxHash</h2>
+            <pre><code class="c" data-trim style="font-size: 1.3em">
+for (; (p + 4) &lt;= end; p += 4) {
+  hash += *((const uint32_t *) p) * xxhash32_prime3;
+  hash = xxhash32_rotl(hash, 17) * xxhash32_prime4;
+}
+
+for (; p &lt; end; p++) {
+  hash += ((uint8_t) *p) * xxhash32_prime5;
+  hash = xxhash32_rotl(hash, 11) * xxhash32_prime1;
+}
             </code></pre>
             <aside class="notes">
               There are then the 4 and 1 byte mixers, which are used until all
@@ -1019,13 +1081,13 @@ while offset < len(data):
           <section>
             <h2>xxHash</h2>
             <pre><code class="python" data-trim style="font-size: 1.3em">
-hash ^= hash >> uint32(15)
-hash *= primes[1]
-hash ^= hash >> uint32(13)
-hash *= primes[2]
-hash ^= hash >> uint32(16)
+hash ^= hash &gt;&gt; 15;
+hash *= xxhash32_prime2;
+hash ^= hash &gt;&gt; 13;
+hash *= xxhash32_prime3;
+hash ^= hash &gt;&gt; 16;
 
-return hash
+return hash;
             </code></pre>
             <aside class="notes">
               Finally, a post processing step. Notice how these all look pretty
@@ -1039,26 +1101,36 @@ return hash
               <thead>
                 <tr>
                   <th>Corpus</th>
-                  <th>CPU time (s)</th>
+                  <th>CPU time (ms)</th>
+                  <th>% FNV-1a</th>
                   <th>Collisions</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
                   <td>Numbers</td>
-                  <td>3.337822</td>
-                  <td>0</td>
+                  <td>69.41</td>
+                  <td>125%</td>
+                  <td>2 (0.001%)</td>
                 </tr>
                 <tr>
                   <td>Words</td>
-                  <td>4.032726</td>
-                  <td>12 (0.005%)</td>
+                  <td>73.97</td>
+                  <td>109%</td>
+                  <td>6 (0.003%)</td>
+                </tr>
+                <tr>
+                  <td>Holmes</td>
+                  <td>0.396</td>
+                  <td>12.6%</td>
+                  <td>0</td>
                 </tr>
               </tbody>
             </table>
             <aside class="notes">
-              No number collisions, which probably indicates the type of data
-              xxHash was most tested with.
+              Minimal collisions, slightly slower than MurmurHash3 on small
+              inputs, but even quicker on fast because of the hoops it jumps
+              through for speed (reading 16 bytes at a time).
             </aside>
           </section>
 
