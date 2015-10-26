@@ -661,6 +661,86 @@ aardvark
         </section>
 
         <section>
+          <section>
+            <h1>CRC32</h1>
+            <aside class="notes">
+              Another classic algorithm is CRC32, which dates from 1961. It's
+              another byte-wise algorithm.
+            </aside>
+          </section>
+
+          <section>
+            <h2>CRC32</h2>
+            <pre><code class="c" data-trim>
+static const unsigned int crc32tab[256] = { /* ... */ };
+
+uint32_t crc32(const char *data, size_t len) {
+  uint32_t crc = 0;
+  const char *ptr;
+
+  for (ptr = data; ptr < (data + len); ptr++) {
+    crc = ((crc &gt;&gt; 8) &amp; 0x00ffffff) ^
+          crc32tab[(crc ^ (*ptr)) &amp; 0xff];
+  }
+
+  return crc;
+}
+            </code></pre>
+            <aside class="notes">
+              CRC is interesting because it uses very basic primitives, but
+              combines them with a lookup table that is used for extra mixing.
+            </aside>
+          </section>
+
+          <section>
+            <h2>CRC32</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Corpus</th>
+                  <th>CPU time (ms)</th>
+                  <th>% FNV-1a</th>
+                  <th>Collisions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Numbers</td>
+                  <td>70.69</td>
+                  <td>128%</td>
+                  <td>0</td>
+                </tr>
+                <tr>
+                  <td>Words</td>
+                  <td>80.23</td>
+                  <td>118%</td>
+                  <td>8 (0.003%)</td>
+                </tr>
+                <tr>
+                  <td>Holmes</td>
+                  <td>6.70</td>
+                  <td>214%</td>
+                  <td>0</td>
+                </tr>
+              </tbody>
+            </table>
+            <aside class="notes">
+              It's a bit slower than FNV-1a, but it's still pretty good for a
+              byte-wise algorithm.
+            </aside>
+          </section>
+
+          <section>
+            <h2>CRC32</h2>
+            <img src="images/crc32.png">
+            <aside class="notes">
+              You can see some clumping in here. This is because of the lookup
+              table: values will tend towards certain buckets.
+            </aside>
+          </section>
+        </section>
+
+        <section>
           <section id="mm3-title">
             <h1>MurmurHash3</h1>
             <aside class="notes">
@@ -1286,63 +1366,6 @@ return hash
               Of course, it could be worse. I won't go through the
               implementation of this one, but this is the output of JSHash
               (Justin Sobel) with the numbers input.
-            </aside>
-          </section>
-        </section>
-
-        <section>
-          <section>
-            <h1>CRC32</h1>
-            <aside class="notes">
-              Finally, there is the venerable CRC32. The Cyclic Redundancy
-              Check family of functions rely on polynomial division to generate
-              a checksum. There's serious maths here. I don't know if you're
-              ready for the implementation...
-            </aside>
-          </section>
-
-          <section>
-            <h2>CRC32</h2>
-            <pre><code class="python" data-trim style="font-size: 1.4em">
-import zlib
-
-def crc32(data: bytes) -> int:
-    return zlib.crc32(data) & 0xffffffff
-            </code></pre>
-            <aside class="notes">
-              (pause) So, why wouldn't you use this all the time? Actually, you
-              might. It's not that bad.
-            </aside>
-          </section>
-
-          <section>
-            <h2>CRC32</h2>
-            <table>
-              <thead>
-                <tr>
-                  <th>Corpus</th>
-                  <th>CPU time (s)</th>
-                  <th>Collisions</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Numbers</td>
-                  <td>0.576802</td>
-                  <td>0</td>
-                </tr>
-                <tr>
-                  <td>Words</td>
-                  <td>0.572763</td>
-                  <td>8 (0.003%)</td>
-                </tr>
-              </tbody>
-            </table>
-            <aside class="notes">
-              Really, that's pretty good. The word collisions are potentially
-              an issue, but it's still above average. The only other issue is
-              memory usage: CRC32 uses a lookup table and keeps more in memory,
-              but unless you're on the $7 Python computer, you should be fine.
             </aside>
           </section>
         </section>

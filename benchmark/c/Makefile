@@ -5,7 +5,7 @@ CXXFLAGS = -std=c++11 -O3
 
 all: benchmark
 
-benchmark: benchmark.cpp fnv1a.o murmurhash3.o xxhash.o
+benchmark: benchmark.cpp crc32.o fnv1a.o murmurhash3.o xxhash.o
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
 %.o: %.c
