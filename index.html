@@ -692,6 +692,44 @@ uint32_t crc32(const char *data, size_t len) {
             </aside>
           </section>
 
+          <!--
+          <section>
+            <h2>CRC32</h2>
+            <svg class="flowchart" width="1000" height="500">
+              <defs>
+                <marker id="arrowhead" markerWidth="6" markerHeight="6" orient="auto" refX="6" refY="3">
+                  <path d="M0,0 L6,3 0,6" />
+                </marker>
+              </defs>
+
+              <rect class="terminal" x="5" y="210" height="80" width="150" rx="20" ry="20" />
+              <text class="label" x="80" y="250">data</text>
+
+              <rect class="terminal" x="845" y="210" height="80" width="150" rx="20" ry="20" />
+              <text class="label" x="920" y="250">hash</text>
+
+              <rect class="terminal" x="540" y="60" height="80" width="180" rx="20" ry="20" />
+              <text class="label" x="630" y="100">table</text>
+
+              <rect class="action shift" x="330" y="210" height="80" width="80" />
+              <text class="label" x="370" y="250">&lt;&lt;</text>
+
+              <rect class="action and" x="460" y="210" height="80" width="80" />
+              <text class="label" x="500" y="250">&amp;</text>
+
+              <rect class="action xor" x="590" y="210" height="80" width="80" />
+              <text class="label" x="630" y="250">^</text>
+
+              <line class="arrow" x1="155" y1="250" x2="330" y2="250" />
+              <line class="arrow" x1="410" y1="250" x2="460" y2="250" />
+              <line class="arrow" x1="540" y1="250" x2="590" y2="250" />
+              <line class="arrow" x1="670" y1="250" x2="845" y2="250" />
+              <line class="arrow" x1="630" y1="140" x2="630" y2="210" />
+              <path class="arrow" d="M630 290 V 340 C 630 440, 370 440, 370 340 V 290" />
+            </svg>
+          </section>
+          -->
+
           <section>
             <h2>CRC32</h2>
             <table>
@@ -1427,12 +1465,39 @@ return hash;
           </section>
 
           <section>
+            <h2>Respect your standard library</h2>
+            <aside class="notes">
+              If you're working in an interpreted language, chances are
+              whatever your language provides in its standard library will be
+              written in C and quicker. In Python and PHP, you may as well use
+              CRC32, since they're provided. Less work, and faster!
+            </aside>
+          </section>
+
+          <section>
             <h2>Know your inputs</h2>
             <aside class="notes">
               xxHash makes some compromises that don't make sense if your
-              average input is under 16 bytes. If your average input is in the
-              1-8 byte range, FNV-1a is actually awesome, and very easy to
-              input.
+              average input is under 16 bytes.
+            </aside>
+          </section>
+
+          <section data-state="words-chart">
+            <h2>Small inputs</h2>
+            <canvas id="words-chart" width="1000" height="500"></canvas>
+            <aside class="notes">
+              For the words corpus, which has a mean size of 9 bytes, the block
+              reading algorithms don't do any better. At that point, you might
+              as well pick something extremely simple like FNV-1a.
+            </aside>
+          </section>
+
+          <section data-state="holmes-chart">
+            <h2>Large inputs</h2>
+            <canvas id="holmes-chart" width="1000" height="500"></canvas>
+            <aside class="notes">
+              For the Holmes corpus, which has a mean of 67k, the block reading
+              algorithms shine. xxHash is crazy fast.
             </aside>
           </section>
 
@@ -1443,17 +1508,6 @@ return hash;
               way to figure this out is to implement and test with sample data:
               hash functions are easy to implement, and you can test output
               using sets.
-            </aside>
-          </section>
-
-          <section>
-            <h2>Respect the standard library</h2>
-            <aside class="notes">
-              If you're not in C, native functions will be faster. The C CRC32
-              implementation kills everything elsein Python, even though CRC32
-              isn't considered a fast algorithm in general. If you're calling
-              hash functions a lot and don't want to write C yourself, use what
-              Python gives you. It's free!
             </aside>
           </section>
         </section>
@@ -1469,6 +1523,7 @@ return hash;
 
 		<script src="reveal.js/lib/js/head.min.js"></script>
 		<script src="reveal.js/js/reveal.js"></script>
+    <script src="js/chart.min.js"></script>
 
 		<script>
 
@@ -1494,6 +1549,30 @@ return hash;
 					{ src: 'reveal.js/plugin/notes/notes.js', async: true }
 				]
 			});
+
+      Reveal.addEventListener("words-chart", function () {
+        new Chart(document.getElementById("words-chart").getContext("2d")).Bar({
+          labels: ["FNV-1a", "CRC32", "MurmurHash3", "xxHash"],
+          datasets: [
+            {
+              label: "Words",
+              data: [68.12, 80.23, 69.23, 73.97],
+            },
+          ],
+        });
+      });
+
+      Reveal.addEventListener("holmes-chart", function () {
+        new Chart(document.getElementById("holmes-chart").getContext("2d")).Bar({
+          labels: ["FNV-1a", "CRC32", "MurmurHash3", "xxHash"],
+          datasets: [
+            {
+              label: "Holmes",
+              data: [3.13, 6.70, 0.95, 0.396],
+            },
+          ],
+        });
+      });
 
 		</script>
 
