@@ -1427,20 +1427,33 @@ return hash;
           </section>
 
           <section>
+            <h2>Know your inputs</h2>
+            <aside class="notes">
+              xxHash makes some compromises that don't make sense if your
+              average input is under 16 bytes. If your average input is in the
+              1-8 byte range, FNV-1a is actually awesome, and very easy to
+              input.
+            </aside>
+          </section>
+
+          <section>
             <h2>Know your requirements</h2>
             <aside class="notes">
               Understand how many collisions you're willing to bear. The best
               way to figure this out is to implement and test with sample data:
               hash functions are easy to implement, and you can test output
-              using sets. If you can deal with a few more collisions, there are
-              speedier options, like CRC32.
+              using sets.
             </aside>
           </section>
 
           <section>
             <h2>Respect the standard library</h2>
             <aside class="notes">
-              The C CRC32 implementation kills everything else, even though CRC32 isn't considered a fast algorithm in general. If you're calling hash functions a lot and don't want to write C yourself, use what Python gives you. It's free!
+              If you're not in C, native functions will be faster. The C CRC32
+              implementation kills everything elsein Python, even though CRC32
+              isn't considered a fast algorithm in general. If you're calling
+              hash functions a lot and don't want to write C yourself, use what
+              Python gives you. It's free!
             </aside>
           </section>
         </section>
