@@ -540,10 +540,56 @@ uint32_t fnv1a32(char *data, size_t len) {
           <section>
             <h2>Distribution</h2>
             <aside class="notes">
-              We can look at collisions. I'm going to test each algorithm we
-              look at against two input sets: OS X's /usr/share/dict/words, and
-              the numbers 0-235885 (so it's the same size as the words)
-              represented as strings.
+              We can look at collisions. So let's talk about inputs.
+            </aside>
+          </section>
+
+          <section>
+            <h2>Input: words</h2>
+            <pre><code class="nohighlight" data-trim>
+A
+a
+aa
+aal
+aalii
+aam
+Aani
+aardvark
+            </code></pre>
+            <aside class="notes">
+              This is the OS X /usr/share/dict/words. This is a good test for
+              collisions, and an interesting one for performance with lots of
+              varied, short inputs.
+            </aside>
+          </section>
+
+          <section>
+            <h2>Input: numbers</h2>
+            <pre><code class="nohighlight" data-trim>
+0
+1
+2
+3
+4
+5
+6
+7
+            </code></pre>
+            <aside class="notes">
+              This is a file of numbers from 0 to 235885 (the same size as the
+              words input). Again, this is really interesting for collisions: a
+              less varied input.
+            </aside>
+          </section>
+
+          <section>
+            <h2>Input: Holmes</h2>
+            <img src="images/Holmes_by_Paget.jpg">
+            <aside class="notes">
+              The complete Sherlock Holmes canon, with each adventure or novel
+              as a separate input. This is a good performance test for larger
+              (40k-200k) inputs. (Less likely for hashtable keys, but likely
+              for "have I seen this" cases.)
             </aside>
           </section>
         </section>
@@ -563,20 +609,25 @@ uint32_t fnv1a32(char *data, size_t len) {
               <thead>
                 <tr>
                   <th>Corpus</th>
-                  <th>CPU time (s)</th>
+                  <th>CPU time (ms)</th>
                   <th>Collisions</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
                   <td>Numbers</td>
-                  <td>0.323812</td>
+                  <td>55.40</td>
                   <td>0</td>
                 </tr>
                 <tr>
                   <td>Words</td>
-                  <td>0.397108</td>
+                  <td>68.12</td>
                   <td>5 (0.002%)</td>
+                </tr>
+                <tr>
+                  <td>Holmes</td>
+                  <td>3.13</td>
+                  <td>0</td>
                 </tr>
               </tbody>
             </table>
@@ -615,146 +666,183 @@ uint32_t fnv1a32(char *data, size_t len) {
             <aside class="notes">
               MurmurHash3 is another relatively simple to implement hashing
               function. As the name implies, it's the third revision of a
-              function designed by Austin Appleby.
+              function designed by Austin Appleby. The name is inspired by two
+              basic operations: MUltiply and Rotate.
             </aside>
           </section>
 
           <section id="mm3">
             <h2>MurmurHash3</h2>
-            <pre><code class="python" data-trim style="font-size: 0.37em">
-def murmurhash3(data: bytes, seed: uint32) -> uint32:
-    c1 = uint32(0xcc9e2d51)
-    c2 = uint32(0x1b873593)
-    r1 = uint32(15)
-    r2 = uint32(13)
-    m = uint32(5)
-    n = uint32(0xe6546b64)
+            <pre><code class="c" data-trim style="font-size: 0.32em">
+uint32_t murmurhash3_32(const char *data, size_t len, uint32_t seed) {
+  static const uint32_t c1 = 0xcc9e2d51;
+  static const uint32_t c2 = 0x1b873593;
+  static const uint32_t r1 = 15;
+  static const uint32_t r2 = 13;
+  static const uint32_t m = 5;
+  static const uint32_t n = 0xe6546b64;
 
-    hash = see
+  uint32_t hash = seed;
 
-    i = 0
-    while i < len(data):
-        c = data[i:i+4]
-        i += 4
+  const int nblocks = len / 4;
+  const uint32_t *blocks = (const uint32_t *) data;
+  for (int i = 0; i < nblocks; i++) {
+    uint32_t k = blocks[i];
+    k *= c1;
+    k = (k &lt;&lt; r1) | (k &gt;&gt; (32 - r1));
+    k *= c2;
 
-        if len(c) == 4:
-            k = uint32(unpack("=L", c)[0])
-            k *= c1
-            k = (k << r1) | (k >> (uint32(32) - r1))
-            k *= c2
-            hash ^= k
-            hash = (hash << r2) | (hash >> (uint32(32) - r2))
-            hash = hash * m + n
-        else:
-            k = uint32(0)
-            if len(c) == 3:
-                k ^= uint32(c[2] << 16)
-            if len(c) >= 2:
-                k ^= uint32(c[1] << 8)
-            if len(c) >= 1:
-                k ^= uint32(c[0])
-                k *= c1
-                k = (k << r1) | (k >> (uint32(32) - r1))
-                k *= c2
-                hash ^= k
+    hash ^= k;
+    hash = ((hash &lt;&lt; r2) | (hash &gt;&gt; (32 - r2))) * m + n;
+  }
 
-    hash ^= uint32(len(data))
-    hash ^= uint32(hash >> 16)
-    hash *= uint32(0x85ebca6b)
-    hash ^= uint32(hash << 13)
-    hash *= uint32(0xc2b2ae35)
-    hash ^= uint32(hash >> 16)
+  const uint8_t *tail = (const uint8_t *) (data + nblocks * 4);
+  uint32_t k1 = 0;
 
-    return hash
-            </code></pre>
-          </section>
+  switch (len &amp; 3) {
+  case 3:
+    k1 ^= tail[2] &lt;&lt; 16;
+  case 2:
+    k1 ^= tail[1] &lt;&lt; 8;
+  case 1:
+    k1 ^= tail[0];
 
-          <section>
-            <h2>MurmurHash3</h2>
-            <pre><code class="python" data-trim>
-def murmurhash3(data: bytes, seed: uint32) -> uint32:
-    c1 = uint32(0xcc9e2d51)
-    c2 = uint32(0x1b873593)
-    r1 = uint32(15)
-    r2 = uint32(13)
-    m = uint32(5)
-    n = uint32(0xe6546b64)
+    k1 *= c1;
+    k1 = (k1 &lt;&lt; r1) | (k1 &gt;&gt; (32 - r1));
+    k1 *= c2;
+    hash ^= k1;
+  }
 
-    hash = seed
-            </code></pre>
-          </section>
+  hash ^= len;
+  hash ^= (hash &gt;&gt; 16);
+  hash *= 0x85ebca6b;
+  hash ^= (hash &gt;&gt; 13);
+  hash *= 0xc2b2ae35;
+  hash ^= (hash &gt;&gt; 16);
 
-          <section>
-            <h2>MurmurHash3</h2>
-            <pre><code class="python" data-trim>
-while i < len(data):
-    c = data[i:i+4]
-    i += 4
+  return hash;
+}
             </code></pre>
             <aside class="notes">
-              Grab a four byte chunk. MurmurHash is unusual in that it operates
-              on words at a time, not bytes.
+              Yikes! It's not that bad, though. Let's break it down: this is
+              typical of a more modern hash function.
             </aside>
           </section>
 
           <section>
             <h2>MurmurHash3</h2>
-            <pre><code class="python" data-trim style="font-size: 1.05em">
-if len(c) == 4:
-    k = uint32(unpack("=L", c)[0])
-    k *= c1
-    k = (k << r1) | (k >> (uint32(32) - r1))
-    k *= c2
-    hash ^= k
-    hash = (hash << r2) | (hash >> (uint32(32) - r2))
-    hash = hash * m + n
+            <pre><code class="c" data-trim>
+uint32_t murmurhash3_32(const char *data,
+                        size_t      len,
+                        uint32_t    seed);
             </code></pre>
             <aside class="notes">
-              The use of struct.unpack probably seems anachronistic now, but
-              it's actually quicker than int.from_bytes.
+              Here's the prototype. A lot of modern hash functions are
+              initialised with seeds. This makes it harder to construct DoS
+              attacks: if the caller can use a random number to seed, you can't
+              pre-compute what will collide.
             </aside>
           </section>
 
           <section>
             <h2>MurmurHash3</h2>
-            <pre><code class="python" data-trim style="font-size: 1.15em">
-else:
-    k = uint32(0)
-    if len(c) == 3:
-        k ^= uint32(c[2] << 16)
-    if len(c) >= 2:
-        k ^= uint32(c[1] << 8)
-    if len(c) >= 1:
-        k ^= uint32(c[0])
-        k *= c1
-        k = (k << r1) | (k >> (uint32(32) - r1))
-        k *= c2
-        hash ^= k
+            <pre><code class="c" data-trim>
+static const uint32_t c1 = 0xcc9e2d51;
+static const uint32_t c2 = 0x1b873593;
+static const uint32_t r1 = 15;
+static const uint32_t r2 = 13;
+static const uint32_t m = 5;
+static const uint32_t n = 0xe6546b64;
+
+uint32_t hash = seed;
+            </code></pre>
+            <aside class="notes">
+              We define a bunch of constants, and set up the initial hash value
+              from the seed.
+            </aside>
+          </section>
+
+          <section>
+            <h2>MurmurHash3</h2>
+            <pre><code class="c" data-trim>
+const size_t nblocks = len / 4;
+const uint32_t *blocks = (const uint32_t *) data;
+
+for (size_t i = 0; i < nblocks; i++) {
+  uint32_t k = blocks[i];
+
+  k *= c1;
+  k = (k &lt;&lt; r1) | (k &gt;&gt; (32 - r1));
+  k *= c2;
+
+  hash ^= k;
+  hash = ((hash &lt;&lt; r2) | (hash &gt;&gt; (32 - r2))) * m + n;
+}
+            </code></pre>
+            <aside class="notes">
+              Here's the heart of the mixing function. Note use of four bytes
+              at a time instead of one (no unaligned access, cache friendly),
+              use of C reinterpret casting semantics, and same math primitives.
+              Trailing bytes are left off by nblocks integer division. Note
+              constants; n is pretty close to 2^32 (enforce overflow).
+            </aside>
+          </section>
+
+          <section>
+            <h2>MurmurHash3</h2>
+            <pre><code class="c" data-trim>
+const uint8_t *tail;
+tail = (const uint8_t *) (data + nblocks * 4);
             </code></pre>
             <aside class="notes">
               Go through some gymnastics for the last few bytes to ensure
-              they're properly mixed into the hash value. The use of multiple
-              mixing functions is common in hash functions that deal with more
-              than one byte at a time.
+              they're properly mixed into the hash value. Note that we're
+              interpreting the tail as bytes, rather than words.
             </aside>
           </section>
 
           <section>
             <h2>MurmurHash3</h2>
-            <pre><code class="python" data-trim>
-hash ^= uint32(len(data))
-hash ^= uint32(hash >> 16)
-hash *= uint32(0x85ebca6b)
-hash ^= uint32(hash << 13)
-hash *= uint32(0xc2b2ae35)
-hash ^= uint32(hash >> 16)
+            <pre><code class="c" data-trim style="font-size: 1.1em">
+uint32_t k1 = 0;
+switch (len &amp; 3) {
+  case 3:
+    k1 ^= tail[2] &lt;&lt; 16;
+  case 2:
+    k1 ^= tail[1] &lt;&lt; 8;
+  case 1:
+    k1 ^= tail[0];
 
-return hash
+    k1 *= c1;
+    k1 = (k1 &lt;&lt; r1) | (k1 &gt;&gt; (32 - r1));
+    k1 *= c2;
+    hash ^= k1;
+}
+            </code></pre>
+            <aside class="notes">
+              The use of a different mixing function for the last few bytes is
+              common. Each byte gets mixed into k1, then additional mixing
+              takes place before it's mixed into the main hash.
+            </aside>
+          </section>
+
+          <section>
+            <h2>MurmurHash3</h2>
+            <pre><code class="c" data-trim>
+hash ^= len;
+hash ^= (hash &gt;&gt; 16);
+hash *= 0x85ebca6b;
+hash ^= (hash &gt;&gt; 13);
+hash *= 0xc2b2ae35;
+hash ^= (hash &gt;&gt; 16);
+
+return hash;
             </code></pre>
             <aside class="notes">
               Finally, after all mixing, some postprocessing occurs. This is
               common in newer hash functions: with careful chosen values, you
-              can attempt to invoke additional avalanching.
+              can attempt to invoke additional avalanching, but this can also
+              be a source of weakness (clumping).
             </aside>
           </section>
 
@@ -764,20 +852,25 @@ return hash
               <thead>
                 <tr>
                   <th>Corpus</th>
-                  <th>CPU time (s)</th>
+                  <th>CPU time (ms)</th>
                   <th>Collisions</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
                   <td>Numbers</td>
-                  <td>4.409535</td>
-                  <td>5 (0.002%)</td>
+                  <td>69.10</td>
+                  <td>4 (0.002%)</td>
                 </tr>
                 <tr>
                   <td>Words</td>
-                  <td>4.965808</td>
-                  <td>5 (0.002%)</td>
+                  <td>69.23</td>
+                  <td>6 (0.003%)</td>
+                </tr>
+                <tr>
+                  <td>Holmes</td>
+                  <td>0.95</td>
+                  <td>0</td>
                 </tr>
               </tbody>
             </table>
