@@ -276,9 +276,8 @@ def hash_function(data: bytes) -&gt; int:
             <h2>Cleverness</h2>
             <ul>
               <li>Unsigned, fixed length integers</li>
-              <li>Bitwise operations (<code>xor</code>; bitshifts)</li>
+              <li>Bitwise operations (xor; bitshifts)</li>
               <li>Multiplication</li>
-              <li>Primes</li>
             </ul>
             <aside class="notes">
               The basic constructs that tend to be used. Bitshifts and xor are
@@ -329,7 +328,7 @@ def hash_function(data: bytes) -&gt; int:
           <section>
             <h2>FNV-1a</h2>
             <pre><code class="c" data-trim>
-uint32_t fnv1a32(char *data, size_t len) {
+uint32_t fnv1a32(const char *data, size_t len) {
   uint32_t hash = 2166136261;
   for (char *byte = data; byte < (data + len); byte++) {
     hash ^= *byte;
@@ -378,7 +377,7 @@ uint32_t fnv1a32(char *data, size_t len) {
 
           <section>
             <h3><code>fnv1a32("ab", 2)</code></h3>
-            <pre><code class="c">  uint32_t fnv1a32(char *data, size_t len) {
+            <pre><code class="c">  uint32_t fnv1a32(const char *data, size_t len) {
 &gt;   uint32_t hash = 2166136261;
     for (char *byte = data; byte < (data + len); byte++) {
       hash ^= *byte;
@@ -399,7 +398,7 @@ uint32_t fnv1a32(char *data, size_t len) {
 
           <section>
             <h3><code>fnv1a32("ab", 2)</code></h3>
-            <pre><code class="c">  uint32_t fnv1a32(char *data, size_t len) {
+            <pre><code class="c">  uint32_t fnv1a32(const char *data, size_t len) {
     uint32_t hash = 2166136261;
 &gt;   for (char *byte = data; byte < (data + len); byte++) {
       hash ^= *byte;
@@ -416,7 +415,7 @@ uint32_t fnv1a32(char *data, size_t len) {
 
           <section>
             <h3><code>fnv1a32("ab", 2)</code></h3>
-            <pre><code class="c">  uint32_t fnv1a32(char *data, size_t len) {
+            <pre><code class="c">  uint32_t fnv1a32(const char *data, size_t len) {
     uint32_t hash = 2166136261;
     for (char *byte = data; byte < (data + len); byte++) {
 &gt;     hash ^= *byte;
@@ -434,7 +433,7 @@ uint32_t fnv1a32(char *data, size_t len) {
 
           <section>
             <h3><code>fnv1a32("ab", 2)</code></h3>
-            <pre><code class="c">  uint32_t fnv1a32(char *data, size_t len) {
+            <pre><code class="c">  uint32_t fnv1a32(const char *data, size_t len) {
     uint32_t hash = 2166136261;
     for (char *byte = data; byte < (data + len); byte++) {
       hash ^= *byte;
@@ -454,7 +453,7 @@ uint32_t fnv1a32(char *data, size_t len) {
 
           <section>
             <h3><code>fnv1a32("ab", 2)</code></h3>
-            <pre><code class="c">  uint32_t fnv1a32(char *data, size_t len) {
+            <pre><code class="c">  uint32_t fnv1a32(const char *data, size_t len) {
     uint32_t hash = 2166136261;
 &gt;   for (char *byte = data; byte < (data + len); byte++) {
       hash ^= *byte;
@@ -472,7 +471,7 @@ uint32_t fnv1a32(char *data, size_t len) {
 
           <section>
             <h3><code>fnv1a32("ab", 2)</code></h3>
-            <pre><code class="c">  uint32_t fnv1a32(char *data, size_t len) {
+            <pre><code class="c">  uint32_t fnv1a32(const char *data, size_t len) {
     uint32_t hash = 2166136261;
     for (char *byte = data; byte < (data + len); byte++) {
 &gt;     hash ^= *byte;
@@ -489,7 +488,7 @@ uint32_t fnv1a32(char *data, size_t len) {
 
           <section>
             <h3><code>fnv1a32("ab", 2)</code></h3>
-            <pre><code class="c">  uint32_t fnv1a32(char *data, size_t len) {
+            <pre><code class="c">  uint32_t fnv1a32(const char *data, size_t len) {
     uint32_t hash = 2166136261;
     for (char *byte = data; byte < (data + len); byte++) {
       hash ^= *byte;
@@ -672,15 +671,14 @@ aardvark
           <section>
             <h2>CRC32</h2>
             <pre><code class="c" data-trim>
-static const unsigned int crc32tab[256] = { /* ... */ };
+static const uint32_t crc32tab[256] = { /* ... */ };
 
 uint32_t crc32(const char *data, size_t len) {
-  uint32_t crc = 0;
+  uint32_t crc = 0xffffffff;
   const char *ptr;
 
   for (ptr = data; ptr < (data + len); ptr++) {
-    crc = ((crc &gt;&gt; 8) &amp; 0x00ffffff) ^
-          crc32tab[(crc ^ (*ptr)) &amp; 0xff];
+    crc = (crc &gt;&gt; 8) ^ crc32tab[(crc ^ (*ptr)) &amp; 0xff];
   }
 
   return crc;
@@ -744,20 +742,20 @@ uint32_t crc32(const char *data, size_t len) {
               <tbody>
                 <tr>
                   <td>Numbers</td>
-                  <td>70.69</td>
-                  <td>128%</td>
+                  <td>61.42</td>
+                  <td>111%</td>
                   <td>0</td>
                 </tr>
                 <tr>
                   <td>Words</td>
-                  <td>80.23</td>
-                  <td>118%</td>
+                  <td>76.82</td>
+                  <td>113%</td>
                   <td>8 (0.003%)</td>
                 </tr>
                 <tr>
                   <td>Holmes</td>
-                  <td>6.70</td>
-                  <td>214%</td>
+                  <td>6.23</td>
+                  <td>199%</td>
                   <td>0</td>
                 </tr>
               </tbody>
