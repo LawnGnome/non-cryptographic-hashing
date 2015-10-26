@@ -1441,7 +1441,10 @@ return hash;
             <aside class="notes">
               Of course, it could be worse. I won't go through the
               implementation of this one, but this is the output of JSHash
-              (Justin Sobel) with the numbers input.
+              (Justin Sobel) with the numbers input. We used this in a bog
+              standard chained hash table implementation, and then switched to
+              MurmurHash3 and saw a 0.2% speedup just from that in an unrelated
+              project.
             </aside>
           </section>
         </section>
@@ -1507,7 +1510,8 @@ return hash;
               Understand how many collisions you're willing to bear. The best
               way to figure this out is to implement and test with sample data:
               hash functions are easy to implement, and you can test output
-              using sets.
+              using sets. You may also want to consider complexity of
+              implementation: xxHash is robust, but more complicated.
             </aside>
           </section>
         </section>
