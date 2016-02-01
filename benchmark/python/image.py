@@ -14,9 +14,10 @@ def draw(results):
         if n == 0:
             return (255, 255, 255)
         else:
-            hue = floor(360 * (idx / size))
-            lightness = 80 - floor(sqrt(n) * mx)
-            return ImageColor.getrgb("hsl(%d, 100%%, %d%%)" % (hue, lightness))
+            #hue = floor(360 * (idx / size))
+            lightness = 50 - floor(sqrt(n) * mx)
+            return ImageColor.getrgb("hsl(0, 0%%, %d%%)" % lightness)
+            #return ImageColor.getrgb("hsl(%d, 100%%, %d%%)" % (hue, lightness))
     norm = [transform(i, n) for i, n in enumerate(norm)]
 
     im.putdata(norm)
