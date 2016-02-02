@@ -145,4 +145,14 @@ img {
   color: #00237f !important;
 }
 
+/* Background handling. Set perspective and fade it out. */
+.reveal .slide-background {
+  background-size: contain;
+}
+
+.reveal .slide-background.present {
+  opacity: 0.3;
+  transform: translate(14vw, 10vh) perspective(300vw) rotateX(30deg) rotateY(-40deg) rotateZ(20deg)  scale(0.6);
+}
+
 /* vim: set nocin ai et ts=2 sw=2: */
