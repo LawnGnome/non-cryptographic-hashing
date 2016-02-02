@@ -5,7 +5,10 @@
 #include <string>
 #include <sys/time.h>
 
+#include "city.h"
+
 extern "C" {
+  uint32_t cityhash32(const char *data, size_t len, uint32_t ignored);
   uint32_t crc32(const char *data, size_t len, uint32_t ignored);
   uint32_t fnv1a32(const char *data, size_t len, uint32_t ignored);
   uint32_t murmurhash3_32(const char *data, size_t len, uint32_t seed);
@@ -21,6 +24,7 @@ typedef struct {
 } algorithm_function;
 
 algorithm_function algorithms[] = {
+  {"cityhash32", cityhash32},
   {"crc32", crc32},
   {"fnv1a32", fnv1a32},
   {"murmurhash3", murmurhash3_32},
@@ -28,6 +32,10 @@ algorithm_function algorithms[] = {
   {"xxhash32", xxhash32},
   {NULL, NULL},
 };
+
+uint32_t cityhash32(const char *data, size_t len, uint32_t ignored) {
+  return CityHash32(data, len);
+}
 
 uint64_t curtime() {
   struct timeval tv;

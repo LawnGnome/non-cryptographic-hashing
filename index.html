@@ -167,6 +167,7 @@
               While you'd often need to use a cryptographic hash function for
               checksumming, there are scenarios where you really do just want
               the 2010s version of a parity bit. These can be quick and simple.
+              Message digests.
             </aside>
           </section>
 
@@ -1256,6 +1257,91 @@ return hash;
           <section>
             <h2>xxHash</h2>
             <img src="images/xxhash32.png">
+          </section>
+        </section>
+
+        <section>
+          <section>
+            <h1>CityHash</h1>
+            <aside class="notes">
+              I'm not going to go through CityHash in great detail. It's a hash
+              function developed at Google a few years ago that was probably
+              one of the early of the modern generation of hash functions.
+              It's loosely based on early MurmurHash.
+            </aside>
+          </section>
+
+          <section>
+            <h2>CityHash32</h2>
+            <h2>CityHash64</h2>
+            <h2>CityHash128</h2>
+            <aside class="notes">
+              It comes in three variants, with more effort having gone into the
+              64 and 128 bit variants. We'll only look at the 32 bit version
+              here.
+            </aside>
+          </section>
+
+          <section>
+            <h2>CityHash32</h2>
+            <p>20 byte blocks</p>
+            <p>More per block work compared to MurmurHash32</p>
+            <p>7 rotations and 2 swaps per block</p>
+            <aside class="notes">
+              20 byte blocks are an unusual choice: used to optimise readahead
+              caching with the size of the SSE pipeline on CPUs at the time.
+              More work per block, which is a cost when dealing with small
+              inputs.
+            </aside>
+          </section>
+
+          <section>
+            <h2>CityHash32</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Corpus</th>
+                  <th>CPU time (ms)</th>
+                  <th>% FNV-1a</th>
+                  <th>Collisions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Numbers</td>
+                  <td>74.23</td>
+                  <td>134%</td>
+                  <td>5 (0.002%)</td>
+                </tr>
+                <tr>
+                  <td>Words</td>
+                  <td>68.92</td>
+                  <td>101%</td>
+                  <td>7 (0.003%)</td>
+                </tr>
+                <tr>
+                  <td>Holmes</td>
+                  <td>0.68</td>
+                  <td>22%</td>
+                  <td>0</td>
+                </tr>
+              </tbody>
+            </table>
+            <aside class="notes">
+              It's a little disappointing compared to xxHash. Collisions are
+              slightly up, and it's noticeably slower for all input sizes due
+              to the extra work. I suspect it's also over-optimised for the x86
+              CPUs in use in 2008-2010: decisions around block sizes and
+              operations were made with great reference to hardware.
+            </aside>
+          </section>
+
+          <section>
+            <h2>CityHash32</h2>
+            <img src="images/cityhash32.png">
+            <aside class="notes">
+              This is pretty good.
+            </aside>
           </section>
         </section>
 
