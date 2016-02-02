@@ -22,6 +22,14 @@ def timed(method):
     return time
 
 @timed
+def cityhash32(data: bytes) -> int:
+    from ctypes import cdll
+    from os.path import realpath
+
+    lib = cdll.LoadLibrary(realpath("../c/libcityhash.so"))
+    return lib.cityhash32(data, len(data))
+
+@timed
 def crc32(data: bytes) -> int:
     from zlib import crc32
 
@@ -256,6 +264,7 @@ def xxhash32(data: bytes) -> uint32:
     return hash
 
 ALGORITHMS = {
+    "cityhash32": cityhash32,
     "crc32": crc32,
     "fnv132": fnv132,
     "fnv1a32": fnv1a32,
