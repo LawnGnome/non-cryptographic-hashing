@@ -389,11 +389,12 @@ uint32_t fnv1a32(const char *data, size_t len) {
             <code><pre>hash:  1000 0001 0001 1100 1001 1101 1100 0101</pre></code>
             <code><pre>*byte: (unset)</pre></code>
             <aside class="notes">
-              First, we set our hash value to a randomly selected number. This
-              isn't actually a prime: it's not chosen for its dispersal
-              characteristics, but rather is simply a non-zero value so that
-              the initial hash value isn't all zeroes. (In fact, it's the FNV-0
-              hash of the e-mail signature line of Landon Curt Noll!)
+              First, we set our hash value to a randomly selected number.
+              (FNV-0 did not have this step.) This isn't actually a prime: it's
+              not chosen for its dispersal characteristics, but rather is
+              simply a non-zero value so that the initial hash value isn't all
+              zeroes. (In fact, it's the FNV-0 hash of the e-mail signature
+              line of Landon Curt Noll!)
             </aside>
           </section>
 
@@ -589,7 +590,8 @@ aardvark
               The complete Sherlock Holmes canon, with each adventure or novel
               as a separate input. This is a good performance test for larger
               (40k-200k) inputs. (Less likely for hashtable keys, but likely
-              for "have I seen this" cases.)
+              for "have I seen this" cases.) What we'll see is that some
+              algorithms are better optimised for larger inputs than others.
             </aside>
           </section>
         </section>
@@ -860,7 +862,8 @@ uint32_t murmurhash3_32(const char *data,
               Here's the prototype. A lot of modern hash functions are
               initialised with seeds. This makes it harder to construct DoS
               attacks: if the caller can use a random number to seed, you can't
-              pre-compute what will collide.
+              pre-compute what will collide. (Talk about PHP DoS attack fixed
+              in 5.3.9 in January 2012.)
             </aside>
           </section>
 
