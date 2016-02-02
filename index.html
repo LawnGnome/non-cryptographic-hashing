@@ -1652,25 +1652,29 @@ return hash;
 
       Reveal.addEventListener("words-chart", function () {
         new Chart(document.getElementById("words-chart").getContext("2d")).Bar({
-          labels: ["FNV-1a", "CRC32", "MurmurHash3", "xxHash"],
+          labels: ["FNV-1a", "CRC32", "MurmurHash3", "xxHash", "CityHash32"],
           datasets: [
             {
               label: "Words",
-              data: [68.12, 80.23, 69.23, 73.97],
+              data: [68.12, 80.23, 69.23, 73.97, 68.92],
             },
           ],
+        }, {
+          scaleFontSize: 25,
         });
       });
 
       Reveal.addEventListener("holmes-chart", function () {
         new Chart(document.getElementById("holmes-chart").getContext("2d")).Bar({
-          labels: ["FNV-1a", "CRC32", "MurmurHash3", "xxHash"],
+          labels: ["FNV-1a", "CRC32", "MurmurHash3", "xxHash", "CityHash32"],
           datasets: [
             {
               label: "Holmes",
-              data: [3.13, 6.70, 0.95, 0.396],
+              data: [3.13, 6.70, 0.95, 0.396, 0.68],
             },
           ],
+        }, {
+          scaleFontSize: 25,
         });
       });
 
